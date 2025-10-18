@@ -1,0 +1,253 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
+require('dotenv').config();
+
+const app = express();
+const server = http.createServer(app);
+
+// Configuração do Socket.io para produção
+const io = new Server(server, {
+  cors: {
+    origin: process.env.NODE_ENV === 'production' 
+      ? ["https://seu-app.onrender.com"] // Você vai substituir pelo seu domínio
+      : "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// Conexão com MongoDB - Versão para Render
+const connectDB = async () => {
+    try {
+        // No Render, use a variável de ambiente MONGODB_URI
+        const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/watertank';
+        
+        await mongoose.connect(mongoURI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log('MongoDB conectado com sucesso');
+    } catch (err) {
+        console.error('Erro ao conectar ao MongoDB:', err.message);
+        process.exit(1);
+    }
+};
+
+// Conectar ao MongoDB
+connectDB();
+
+// Importar modelos (apenas os necessários para este arquivo)
+const Unit = require('./database/models/Unit');
+const UnitData = require('./database/models/UnitData');
+
+// Rotas
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/units', require('./routes/units'));
+app.use('/api/readings', require('./routes/readings'));
+app.use('/api/units', require('./routes/unitData'));
+app.use('/api/bases', require('./routes/bases'));
+app.use('/api/users', require('./routes/users'));
+
+// Health check endpoint (OBRIGATÓRIO para Render)
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        message: 'Servidor funcionando',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+// Página inicial
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Endpoint para gerenciar unidades
+app.get('/manage-units', async (req, res) => {
+  try {
+    const units = await Unit.find({});
+    res.send(`
+      <html>
+        <head>
+          <title>Gerenciar Unidades</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f4f4f4; }
+            .delete-btn { background-color: #ff4444; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+            .create-btn { background-color: #44aa44; color: white; border: none; padding: 10px 20px; cursor: pointer; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <h1>Gerenciar Unidades</h1>
+          <button class="create-btn" onclick="window.location.href='/create-test-unit'">Criar Nova Unidade</button>
+          <table>
+            <tr>
+              <th>Nome</th>
+              <th>Local</th>
+              <th>Tipo</th>
+              <th>API Key</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+            ${units.map(unit => `
+              <tr>
+                <td>${unit.name}</td>
+                <td>${unit.location}</td>
+                <td>${unit.type}</td>
+                <td>${unit.apiKey}</td>
+                <td>${unit.isOnline ? 'Online' : 'Offline'}</td>
+                <td>
+                  <button class="delete-btn" onclick="deleteUnit('${unit._id}', '${unit.name}')">Apagar</button>
+                </td>
+              </tr>
+            `).join('')}
+          </table>
+
+          <script>
+            function deleteUnit(id, name) {
+              if (confirm('Tem certeza que deseja apagar a unidade ' + name + '?')) {
+                fetch('/delete-unit/' + id, { method: 'DELETE' })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.success) {
+                      alert('Unidade apagada com sucesso!');
+                      window.location.reload();
+                    } else {
+                      alert('Erro ao apagar unidade: ' + data.error);
+                    }
+                  })
+                  .catch(error => alert('Erro ao apagar unidade: ' + error));
+              }
+            }
+          </script>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('Erro ao listar unidades:', error);
+    res.status(500).json({ error: 'Erro ao listar unidades' });
+  }
+});
+
+// Endpoint para apagar unidade
+app.delete('/delete-unit/:id', async (req, res) => {
+  try {
+    console.log('Tentando apagar unidade:', req.params.id);
+    
+    // Primeiro apaga os dados históricos
+    console.log('Apagando dados históricos...');
+    await UnitData.deleteMany({ unitId: req.params.id });
+    
+    // Depois apaga a unidade
+    console.log('Apagando unidade...');
+    const unit = await Unit.findByIdAndDelete(req.params.id);
+    
+    if (!unit) {
+      console.log('Unidade não encontrada');
+      return res.status(404).json({ success: false, error: 'Unidade não encontrada' });
+    }
+    
+    console.log('Unidade apagada com sucesso:', unit.name);
+    res.json({ success: true, message: 'Unidade apagada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao apagar unidade:', error);
+    res.status(500).json({ success: false, error: 'Erro ao apagar unidade' });
+  }
+});
+
+// Endpoint temporário para criar unidade de teste
+app.get('/create-test-unit', async (req, res) => {
+  try {
+    // Verifica se já existe uma unidade de teste
+    let unit = await Unit.findOne({ name: "THE ONE pa" });
+    
+    if (!unit) {
+      // Cria uma nova unidade
+      unit = new Unit({
+        name: "THE ONE pa",
+        description: "Unidade de teste",
+        location: "THE ONE",
+        type: "CAIXA",
+        numberOfSensors: 1,
+        apiKey: require('crypto').randomBytes(32).toString('hex')
+      });
+      await unit.save();
+      console.log('Nova unidade criada:', unit);
+    }
+    
+    // URL dinâmica para produção
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? `https://${req.get('host')}`
+      : `http://192.168.100.120:${process.env.PORT || 3000}`;
+    
+    res.json({
+      message: 'Configure o ESP32 com:',
+      api_url: `${baseUrl}/api/units/data`,
+      api_token: unit.apiKey
+    });
+  } catch (error) {
+    console.error('Erro ao criar unidade:', error);
+    res.status(500).json({ error: 'Erro ao criar unidade' });
+  }
+});
+
+// Verificar conexões das unidades periodicamente
+setInterval(async () => {
+  try {
+    const offlineThreshold = new Date(Date.now() - 2 * 60 * 1000);
+    await Unit.updateMany(
+      { lastUpdate: { $lt: offlineThreshold } },
+      { isOnline: false }
+    );
+  } catch (error) {
+    console.error('Erro ao verificar status das unidades:', error);
+  }
+}, 30000);
+
+// WebSocket para atualizações em tempo real
+io.on('connection', (socket) => {
+  console.log('Cliente conectado');
+
+  socket.on('join-tank', (tankId) => {
+    socket.join(`tank-${tankId}`);
+  });
+
+  socket.on('leave-tank', (tankId) => {
+    socket.leave(`tank-${tankId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Cliente desconectado');
+  });
+});
+
+// Exporta io para ser usado em outras partes da aplicação
+app.set('io', io);
+
+// Inicia o servidor
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`📊 Modo: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 URL: http://localhost:${PORT}`);
+  
+  if (process.env.NODE_ENV === 'production') {
+    console.log('✅ Ambiente de PRODUÇÃO');
+  } else {
+    console.log('🔧 Ambiente de DESENVOLVIMENTO');
+  }
+});
+
+module.exports = app;
