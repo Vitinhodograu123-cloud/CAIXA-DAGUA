@@ -13,7 +13,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? ["https://seu-app.onrender.com"] // Você vai substituir pelo seu domínio
+      ? ["https://acquatrack.onrender.com"] // Você vai substituir pelo seu domínio
       : "*",
     methods: ["GET", "POST"]
   }
@@ -215,6 +215,86 @@ setInterval(async () => {
   }
 }, 30000);
 
+// Rotas adicionais para o dashboard
+app.get('/api/units/list', async (req, res) => {
+    try {
+        const units = await Unit.find({});
+        res.json(units);
+    } catch (error) {
+        console.error('Erro ao listar unidades:', error);
+        res.status(500).json({ error: 'Erro ao listar unidades' });
+    }
+});
+
+app.post('/api/units/create', async (req, res) => {
+    try {
+        const { name, type, location } = req.body;
+        
+        // Verifica se já existe uma unidade com este nome
+        const existingUnit = await Unit.findOne({ name });
+        if (existingUnit) {
+            return res.status(400).json({ success: false, error: 'Já existe uma unidade com este nome' });
+        }
+
+        // Cria uma nova unidade
+        const unit = new Unit({
+            name,
+            type,
+            location,
+            description: `${type} em ${location}`,
+            apiKey: require('crypto').randomBytes(32).toString('hex')
+        });
+
+        await unit.save();
+
+        res.json({
+            success: true,
+            unit: {
+                _id: unit._id,
+                name: unit.name,
+                type: unit.type,
+                location: unit.location,
+                apiEndpoint: '/api/units/data',
+                apiToken: unit.apiKey
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao criar unidade:', error);
+        res.status(500).json({ success: false, error: 'Erro ao criar unidade' });
+    }
+});
+
+app.get('/api/units/:id/data', async (req, res) => {
+    try {
+        const unitId = req.params.id;
+        
+        // Busca os dados mais recentes da unidade
+        const latestData = await UnitData.findOne({ unitId })
+            .sort({ timestamp: -1 });
+        
+        if (!latestData) {
+            return res.json({
+                waterLevel: 0,
+                temperature: 0,
+                isVibrating: false,
+                isLowLevel: false,
+                isHighTemp: false
+            });
+        }
+
+        res.json({
+            waterLevel: latestData.waterLevel || 0,
+            temperature: latestData.temperature || 0,
+            isVibrating: latestData.isVibrating || false,
+            isLowLevel: latestData.waterLevel < 20,
+            isHighTemp: latestData.temperature > 40
+        });
+    } catch (error) {
+        console.error('Erro ao buscar dados da unidade:', error);
+        res.status(500).json({ error: 'Erro ao buscar dados' });
+    }
+});
+
 // WebSocket para atualizações em tempo real
 io.on('connection', (socket) => {
   console.log('Cliente conectado');
@@ -249,5 +329,6 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('🔧 Ambiente de DESENVOLVIMENTO');
   }
 });
+
 
 module.exports = app;
