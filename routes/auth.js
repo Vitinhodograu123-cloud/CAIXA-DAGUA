@@ -93,5 +93,73 @@ router.get('/test', (req, res) => {
   });
 });
 
+// Debug endpoint para ver usuários
+router.get('/debug-users', async (req, res) => {
+  try {
+    const users = await User.find({});
+    console.log('Usuários no banco:', users);
+    res.json({ 
+      totalUsers: users.length,
+      users: users.map(u => ({
+        username: u.username,
+        role: u.role,
+        hasPassword: !!u.password
+      }))
+    });
+  } catch (error) {
+    console.error('Erro no debug:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Debug login detalhado
+router.post('/debug-login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    console.log('🔐 Tentativa de login para:', username);
+    
+    // Busca usuário
+    const user = await User.findOne({ username });
+    console.log('👤 Usuário encontrado:', user ? 'SIM' : 'NÃO');
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Usuário não encontrado' });
+    }
+    
+    // Verifica senha
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('🔑 Senha correta:', isMatch);
+    console.log('📝 Hash no banco:', user.password);
+    
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Senha incorreta' });
+    }
+    
+    // Verifica JWT
+    console.log('🔐 JWT_SECRET existe:', !!process.env.JWT_SECRET);
+    
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || 'AcquaTrack_2024_Super_Secret_Key@123!',
+      { expiresIn: '24h' }
+    );
+    
+    console.log('✅ Login bem-sucedido!');
+    res.json({ 
+      success: true, 
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        role: user.role
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro no login:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 module.exports = router;
+
 
