@@ -61,11 +61,7 @@ function setupEventListeners() {
 // Carregar unidades
 async function loadUnits() {
     try {
-        // Pega a porta atual do servidor
-        const port = window.location.port || '3000';
-        const baseUrl = `${window.location.protocol}//${window.location.hostname}:${port}`;
-        
-        const response = await fetch(`${baseUrl}/api/units`, {
+        const response = await fetch('/api/units/list', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -77,7 +73,7 @@ async function loadUnits() {
         }
 
         const units = await response.json();
-        console.log('Unidades carregadas:', units); // Debug
+        console.log('Unidades carregadas:', units);
         
         if (!units || units.length === 0) {
             const unitsList = document.getElementById('unitsList');
@@ -214,7 +210,7 @@ async function handleAddUnit(e) {
     };
 
     try {
-        const response = await fetch('/api/units', {
+        const response = await fetch('/api/units/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -226,33 +222,19 @@ async function handleAddUnit(e) {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message || 'Erro ao criar unidade');
+            throw new Error(data.error || 'Erro ao criar unidade');
         }
 
         // Mostra mensagem de sucesso
-        const successMessage = document.createElement('div');
-        successMessage.className = 'alert alert-success';
-        successMessage.textContent = 'Unidade criada com sucesso!';
-        document.querySelector('.modal-content').prepend(successMessage);
-
-        // Fecha o modal após 2 segundos
-        setTimeout(() => {
-            closeModal();
-            loadUnits();
-        }, 2000);
+        alert('✅ Unidade criada com sucesso!');
+        
+        // Fecha o modal e recarrega a lista
+        closeModal();
+        loadUnits();
+        
     } catch (error) {
-        // Mostra mensagem de erro
-        const errorMessage = document.createElement('div');
-        errorMessage.className = 'alert alert-error';
-        errorMessage.textContent = error.message;
-        document.querySelector('.modal-content').prepend(errorMessage);
-
-        // Remove a mensagem após 5 segundos
-        setTimeout(() => {
-            errorMessage.remove();
-        }, 5000);
-
-        console.error('Erro:', error);
+        console.error('Erro ao criar unidade:', error);
+        alert('❌ Erro ao criar unidade: ' + error.message);
     }
 }
 
@@ -288,4 +270,5 @@ socket.on('unitUpdate', (data) => {
         };
         updateCharts(chartData);
     }
+
 });
