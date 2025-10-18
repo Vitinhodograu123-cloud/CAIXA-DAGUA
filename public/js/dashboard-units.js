@@ -1,5 +1,36 @@
 // Adicione este código ao seu arquivo public/js/dashboard.js existente
 
+function getAuthToken() {
+    return localStorage.getItem('token');
+}
+
+// Função para fazer requisições autenticadas
+async function fetchWithAuth(url, options = {}) {
+    const token = getAuthToken();
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+    
+    if (response.status === 401) {
+        // Token inválido, redirecionar para login
+        window.location.href = '/';
+        return;
+    }
+    
+    return response;
+}
+
 // Função para criar modal de adicionar unidade
 function createAddUnitModal() {
     const modal = document.createElement('div');
@@ -73,14 +104,11 @@ function createAddUnitModal() {
         };
         
         try {
-            const response = await fetch('/api/units/create', {
+            const response = await fetchWithAuth('/api/units/create', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(formData)
             });
-            
+                        
             const data = await response.json();
             
             if (data.success) {
@@ -107,7 +135,7 @@ function createAddUnitModal() {
 // Função para atualizar lista de unidades
 async function updateUnitsList() {
     try {
-        const response = await fetch('/api/units/list');
+        const response = await fetchWithAuth('/api/units/list');
         const units = await response.json();
         
         // Atualizar container de unidades
@@ -164,7 +192,7 @@ async function updateUnitsList() {
 // Função para carregar dados de uma unidade
 async function loadUnitData(unitId) {
     try {
-        const response = await fetch(`/api/units/${unitId}/data`);
+        const response = await fetchWithAuth(`/api/units/${unitId}/data`);
         const data = await response.json();
         
         const container = document.getElementById(`unit-data-${unitId}`);
@@ -192,7 +220,9 @@ async function loadUnitData(unitId) {
 }
 
 // Configurar Socket.IO para atualizações em tempo real
-const socket = io();
+const socket = io({ 
+    transports: ['websocket', 'polling'] 
+});
 
 socket.on('unitUpdate', (data) => {
     // Atualizar dados da unidade quando receber atualização
@@ -343,4 +373,5 @@ document.head.appendChild(styleSheet);
 document.addEventListener('DOMContentLoaded', () => {
     createAddUnitModal();
     updateUnitsList();
+
 });
