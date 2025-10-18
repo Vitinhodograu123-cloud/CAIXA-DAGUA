@@ -63,7 +63,37 @@ app.use('/api/users', require('./routes/users'));
 // GET /api/units/list - Listar todas as unidades
 app.get('/api/units/list', async (req, res) => {
     try {
+        // Verifica o token de autenticação
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Token não fornecido' });
+        }
+
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'AcquaTrack_2024_Super_Secret_Key@123!');
+        
+        // Se for admin, mostra todas as unidades
+        if (decoded.role === 'admin') {
+            const units = await Unit.find({});
+            return res.json(units);
+        }
+        
+        // Para usuários normais, mostra apenas suas unidades
+        // (você precisa ter uma forma de associar unidades a usuários)
         const units = await Unit.find({});
+        res.json(units);
+        
+    } catch (error) {
+        console.error('Erro ao listar unidades:', error);
+        res.status(500).json({ error: 'Erro ao listar unidades' });
+    }
+});
+
+// ROTA TEMPORÁRIA - Listar TODAS as unidades (sem autenticação)
+app.get('/api/units/all', async (req, res) => {
+    try {
+        const units = await Unit.find({});
+        console.log('📋 Unidades encontradas:', units.length);
         res.json(units);
     } catch (error) {
         console.error('Erro ao listar unidades:', error);
@@ -345,3 +375,4 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
