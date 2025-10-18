@@ -84,5 +84,14 @@ router.get('/verify', auth, (req, res) => {
   });
 });
 
+// Test endpoint - ADICIONE ESTAS LINHAS
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Auth route working',
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    timestamp: new Date().toISOString()
+  });
+});
 
 module.exports = router;
+
