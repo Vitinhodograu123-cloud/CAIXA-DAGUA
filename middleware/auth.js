@@ -11,7 +11,7 @@ module.exports = async (req, res, next) => {
     }
 
     // Decodifica o token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'AcquaTrack_2024_Super_Secret_Key@123!');
     
     // Busca o usuário
     const user = await User.findById(decoded.userId);
@@ -28,4 +28,5 @@ module.exports = async (req, res, next) => {
   } catch (error) {
     res.status(401).json({ message: 'Não autorizado' });
   }
+
 };
