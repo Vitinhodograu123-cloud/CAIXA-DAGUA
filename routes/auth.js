@@ -25,7 +25,7 @@ router.post('/login', async (req, res) => {
     // Gera o token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'AcquaTrack_2024_Super_Secret_Key@123!',
       { expiresIn: '24h' }
     );
 
@@ -83,5 +83,6 @@ router.get('/verify', auth, (req, res) => {
     }
   });
 });
+
 
 module.exports = router;
