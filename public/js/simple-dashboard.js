@@ -77,9 +77,21 @@ async function loadUnits() {
     try {
         console.log('📋 Carregando unidades...');
         
-        const response = await fetch('/api/units/list');
+        const token = localStorage.getItem('token');
+        
+        const response = await fetch('/api/units/list', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
         if (!response.ok) {
+            if (response.status === 401) {
+                console.log('🔐 Token inválido ou expirado');
+                // Redireciona para login se não autenticado
+                window.location.href = '/';
+                return;
+            }
             throw new Error(`Erro HTTP: ${response.status}`);
         }
 
@@ -179,9 +191,20 @@ async function loadUnitData(unitId) {
     try {
         console.log(`📊 Carregando dados da unidade: ${unitId}`);
         
-        const response = await fetch(`/api/units/${unitId}/data`);
+        const token = localStorage.getItem('token');
+        
+        const response = await fetch(`/api/units/${unitId}/data`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
         if (!response.ok) {
+            if (response.status === 401) {
+                console.log('🔐 Token inválido ou expirado');
+                window.location.href = '/';
+                return;
+            }
             throw new Error(`Erro HTTP: ${response.status}`);
         }
         
@@ -264,10 +287,13 @@ async function handleAddUnit(e) {
     try {
         console.log('📤 Enviando dados:', formData);
         
+        const token = localStorage.getItem('token');
+        
         const response = await fetch('/api/units/create', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(formData)
         });
@@ -293,6 +319,46 @@ async function handleAddUnit(e) {
     }
 }
 
+function isTokenValid() {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        // Decodifica o token JWT para verificar expiração
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const exp = payload.exp * 1000; // Converte para milissegundos
+        return Date.now() < exp;
+    } catch (error) {
+        return false;
+    }
+}
+
+// Atualize a função checkAuth para verificar expiração
+function checkAuth() {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user || !isTokenValid()) {
+        console.log('🔐 Token inválido ou expirado, redirecionando...');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        return;
+    }
+
+    try {
+        const userData = JSON.parse(user);
+        document.getElementById('username').textContent = userData.username;
+
+        // Mostra botão de adicionar unidade apenas para admin
+        if (userData.role === 'admin') {
+            document.getElementById('addUnitBtn').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('❌ Erro ao verificar autenticação:', error);
+        window.location.href = '/';
+    }
+}
 // Fechar modal
 function closeModal() {
     const modal = document.getElementById('addUnitModal');
@@ -337,3 +403,4 @@ window.debugDashboard = {
 };
 
 console.log('✅ Dashboard carregado e pronto!');
+
