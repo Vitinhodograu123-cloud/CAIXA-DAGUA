@@ -325,7 +325,7 @@ body {
 .data-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--primary-color);
+    color: var(--success-color);
 }
 
 .data-item.warning .data-value {
@@ -512,3 +512,4 @@ body {
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
+
