@@ -130,8 +130,32 @@ app.get('/api/units/all', async (req, res) => {
 // POST /api/units/create - Criar nova unidade
 app.post('/api/units/create', async (req, res) => {
     try {
-        const { name, type, location } = req.body;
+        const { name, type, location, numberOfSensors, description } = req.body;
         
+        console.log('🎯 Criando nova unidade para usuário...');
+
+        // Verificar autenticação
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'Não autenticado' });
+        }
+
+        let userId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            userId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ success: false, error: 'Token inválido' });
+        }
+
+        // Buscar usuário
+        const User = require('./database/models/User');
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+        }
+
         // Verifica se já existe uma unidade com este nome
         const existingUnit = await Unit.findOne({ name });
         if (existingUnit) {
@@ -143,14 +167,23 @@ app.post('/api/units/create', async (req, res) => {
             name,
             type,
             location,
-            description: `${type} em ${location}`,
-            apiKey: require('crypto').randomBytes(32).toString('hex')
+            numberOfSensors: numberOfSensors || 4,
+            description: description || `${type} em ${location}`,
+            apiKey: require('crypto').randomBytes(32).toString('hex'),
+            createdBy: userId // ADICIONA REFERÊNCIA AO USUÁRIO CRIADOR
         });
 
         await unit.save();
 
-        // Emitir evento via Socket.io para atualizar todos os clientes
-        const io = req.app.get('io');
+        // ASSOCIA A UNIDADE AO USUÁRIO QUE A CRIOU
+        await User.findByIdAndUpdate(
+            userId,
+            { $addToSet: { units: unit._id } }
+        );
+
+        console.log(`✅ Nova unidade criada por ${user.username}: ${unit.name}`);
+
+        // Emitir evento via Socket.io
         io.emit('newUnit', { unitId: unit._id });
 
         res.json({
@@ -165,7 +198,7 @@ app.post('/api/units/create', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Erro ao criar unidade:', error);
+        console.error('❌ Erro ao criar unidade:', error);
         res.status(500).json({ success: false, error: 'Erro ao criar unidade' });
     }
 });
@@ -401,6 +434,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
