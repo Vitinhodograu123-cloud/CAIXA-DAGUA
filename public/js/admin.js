@@ -169,11 +169,11 @@ function displayUserStats(stats) {
     `;
 }
 
-// Buscar usuários da API existente
+// Buscar usuários usando a nova API de admin
 async function fetchUsers() {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/users/list', {
+        const response = await fetch('/api/admin/users', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -181,6 +181,16 @@ async function fetchUsers() {
         
         if (response.ok) {
             return await response.json();
+        } else {
+            // Fallback para API antiga
+            const fallbackResponse = await fetch('/api/users/list', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (fallbackResponse.ok) {
+                return await fallbackResponse.json();
+            }
         }
     } catch (error) {
         console.log('❌ Erro ao buscar usuários:', error);
@@ -190,11 +200,11 @@ async function fetchUsers() {
     return [];
 }
 
-// Buscar unidades da API existente
+// Buscar unidades usando a nova API de admin
 async function fetchUnits() {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/units/list', {
+        const response = await fetch('/api/admin/units', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -202,6 +212,16 @@ async function fetchUnits() {
         
         if (response.ok) {
             return await response.json();
+        } else {
+            // Fallback para API antiga
+            const fallbackResponse = await fetch('/api/units/list', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (fallbackResponse.ok) {
+                return await fallbackResponse.json();
+            }
         }
     } catch (error) {
         console.log('❌ Erro ao buscar unidades:', error);
@@ -226,8 +246,8 @@ async function handleCreateUser(e) {
     logToConsole(`👤 Tentando criar usuário: ${username} (${role})...`, 'info');
 
     try {
-        // Tenta criar usuário via API existente
-        const response = await fetch('/api/auth/register', {
+        // Tenta criar usuário via API de admin
+        const response = await fetch('/api/admin/users', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -243,12 +263,30 @@ async function handleCreateUser(e) {
             loadUsers();
             loadUserStats();
         } else {
-            const errorData = await response.json();
-            logToConsole(`❌ Erro ao criar usuário: ${errorData.error || 'Erro desconhecido'}`, 'error');
-            
-            // Fallback: simula criação local
-            logToConsole('🔄 Tentando fallback local...', 'warning');
-            simulateUserCreation(username, password, role);
+            // Fallback para API antiga
+            const fallbackResponse = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ username, password, role })
+            });
+
+            if (fallbackResponse.ok) {
+                const data = await fallbackResponse.json();
+                logToConsole(`✅ Usuário "${username}" criado com sucesso!`, 'success');
+                closeModal('createUserModal');
+                loadUsers();
+                loadUserStats();
+            } else {
+                const errorData = await response.json();
+                logToConsole(`❌ Erro ao criar usuário: ${errorData.error || 'Erro desconhecido'}`, 'error');
+                
+                // Fallback: simula criação local
+                logToConsole('🔄 Tentando fallback local...', 'warning');
+                simulateUserCreation(username, password, role);
+            }
         }
     } catch (error) {
         logToConsole(`❌ Erro de conexão: ${error.message}`, 'error');
@@ -264,7 +302,7 @@ function simulateUserCreation(username, password, role) {
     // Simula um delay de criação
     setTimeout(() => {
         logToConsole(`✅ Usuário "${username}" criado (simulação)`, 'success');
-        logToConsole('💡 Nota: Esta é uma simulação. Configure a API /api/auth/register no servidor.', 'info');
+        logToConsole('💡 Nota: Esta é uma simulação. Configure as APIs de admin no servidor.', 'info');
         closeModal('createUserModal');
         loadUsers();
         loadUserStats();
@@ -296,7 +334,7 @@ function displayUsers(users) {
                 <i class="fas fa-users fa-3x"></i>
                 <h3>Nenhum usuário encontrado</h3>
                 <p>Use o botão "Criar Usuário" para adicionar um novo usuário.</p>
-                <p class="warning-text">⚠️ Configure a API /api/users/list no servidor</p>
+                <p class="warning-text">⚠️ Configure as APIs de admin no servidor</p>
             </div>
         `;
         return;
@@ -395,7 +433,7 @@ function displayUnits(units) {
                 <i class="fas fa-water fa-3x"></i>
                 <h3>Nenhuma unidade encontrada</h3>
                 <p>As unidades do sistema aparecerão aqui.</p>
-                <p class="warning-text">⚠️ Configure a API /api/units/list no servidor</p>
+                <p class="warning-text">⚠️ Configure as APIs de admin no servidor</p>
             </div>
         `;
         return;
@@ -508,7 +546,7 @@ async function handleAssignUnit(e) {
     logToConsole(`🔗 Tentando associar: ${userName} ← ${unitName}`, 'info');
 
     try {
-        // Tenta associar via API
+        // Tenta associar via API de admin
         const response = await fetch('/api/admin/assign-unit', {
             method: 'POST',
             headers: {
@@ -520,6 +558,8 @@ async function handleAssignUnit(e) {
 
         if (response.ok) {
             logToConsole(`✅ Unidade associada com sucesso!`, 'success');
+            closeModal('assignUnitModal');
+            loadUsers(); // Recarrega a lista para mostrar a associação
         } else {
             throw new Error('API não disponível');
         }
@@ -531,10 +571,10 @@ async function handleAssignUnit(e) {
         // Simula sucesso após delay
         setTimeout(() => {
             logToConsole(`✅ Associação simulada: ${userName} ← ${unitName}`, 'success');
+            closeModal('assignUnitModal');
+            loadUsers(); // Recarrega a lista para mostrar a associação
         }, 1000);
     }
-    
-    closeModal('assignUnitModal');
 }
 
 // ========== FERRAMENTAS ==========
@@ -542,6 +582,43 @@ async function handleAssignUnit(e) {
 async function runDatabaseDiagnostic() {
     logToConsole('🩺 Iniciando diagnóstico do sistema...', 'info');
 
+    try {
+        // Tenta usar a API de diagnóstico
+        const response = await fetch('/api/admin/diagnostic', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (response.ok) {
+            const diagnostic = await response.json();
+            
+            logToConsole(`📊 ESTATÍSTICAS DO SISTEMA:`, 'info');
+            logToConsole(`   👤 Usuários: ${diagnostic.usersCount}`, 'info');
+            logToConsole(`   🏭 Unidades: ${diagnostic.unitsCount}`, 'info');
+            logToConsole(`   🔗 Online: ${diagnostic.onlineUnits}`, 'info');
+            
+            if (diagnostic.issues && diagnostic.issues.length > 0) {
+                logToConsole('⚠️ PROBLEMAS ENCONTRADOS:', 'warning');
+                diagnostic.issues.forEach(issue => {
+                    logToConsole(`   • ${issue}`, 'warning');
+                });
+            } else {
+                logToConsole('✅ Sistema funcionando corretamente', 'success');
+            }
+        } else {
+            // Fallback para diagnóstico local
+            await runLocalDiagnostic();
+        }
+        
+    } catch (error) {
+        // Fallback para diagnóstico local
+        await runLocalDiagnostic();
+    }
+}
+
+// Diagnóstico local (fallback)
+async function runLocalDiagnostic() {
     try {
         const [users, units] = await Promise.all([
             fetchUsers(),
@@ -585,8 +662,7 @@ async function runDatabaseDiagnostic() {
         }
         
         logToConsole('💡 RECOMENDAÇÕES:', 'info');
-        logToConsole('   • Configure as APIs no servidor para funcionalidade completa', 'info');
-        logToConsole('   • APIs necessárias: /api/users/list, /api/units/list, /api/auth/register', 'info');
+        logToConsole('   • Configure as APIs de admin no servidor para funcionalidade completa', 'info');
         
     } catch (error) {
         logToConsole(`❌ Erro no diagnóstico: ${error.message}`, 'error');
@@ -634,7 +710,8 @@ async function deleteUser(userId) {
     logToConsole(`🗑️ Tentando excluir usuário ${userId}...`, 'warning');
 
     try {
-        const response = await fetch(`/api/users/${userId}`, {
+        // Tenta usar a API de admin
+        const response = await fetch(`/api/admin/users/${userId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -646,11 +723,25 @@ async function deleteUser(userId) {
             loadUsers();
             loadUserStats();
         } else {
-            throw new Error('API não disponível');
+            // Fallback para API antiga
+            const fallbackResponse = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (fallbackResponse.ok) {
+                logToConsole('✅ Usuário excluído com sucesso', 'success');
+                loadUsers();
+                loadUserStats();
+            } else {
+                throw new Error('API não disponível');
+            }
         }
     } catch (error) {
         logToConsole(`🔄 Simulando exclusão (API não disponível)`, 'warning');
-        logToConsole(`💡 Configure a API DELETE /api/users/:id no servidor`, 'info');
+        logToConsole(`💡 Configure as APIs de admin no servidor`, 'info');
         
         // Simula exclusão após delay
         setTimeout(() => {
@@ -660,5 +751,36 @@ async function deleteUser(userId) {
         }, 1000);
     }
 }
+
+// ========== FUNÇÕES GLOBAIS PARA O HTML ==========
+
+// Funções globais para serem chamadas pelo HTML
+window.listUsers = function() {
+    loadUsers();
+};
+
+window.listUnits = function() {
+    loadUnits();
+};
+
+window.createUser = function() {
+    document.getElementById('createUserModal').style.display = 'block';
+};
+
+window.assignUnitToUser = function() {
+    assignUnitToUser();
+};
+
+window.checkUserStructure = function() {
+    checkUserStructure();
+};
+
+window.runDatabaseDiagnostic = function() {
+    runDatabaseDiagnostic();
+};
+
+window.clearConsole = function() {
+    clearConsole();
+};
 
 console.log('✅ Painel de Administração carregado!');
