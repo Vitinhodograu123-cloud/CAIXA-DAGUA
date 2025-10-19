@@ -139,60 +139,68 @@ function createAddUnitModal() {
     };
 }
 
+// Verificar se o token é válido
+function isTokenValid() {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const exp = payload.exp * 1000; // Convert to milliseconds
+        return Date.now() < exp;
+    } catch (error) {
+        return false;
+    }
+}
+
+// Verificar autenticação ao carregar
+function checkAuth() {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user || !isTokenValid()) {
+        console.log('🔐 Redirecionando para login...');
+        window.location.href = '/';
+        return false;
+    }
+    
+    return true;
+}
 // Função para atualizar lista de unidades
+// Atualizar lista de unidades
 async function updateUnitsList() {
     try {
+        console.log('🔄 Atualizando lista de unidades...');
+        
         const response = await fetchWithAuth('/api/units/list');
-        const units = await response.json();
         
-        // Atualizar container de unidades
-        const container = document.querySelector('.units-container');
-        if (!container) return;
-        
-        container.innerHTML = ''; // Limpar container
-        
-        units.forEach(unit => {
-            const unitCard = document.createElement('div');
-            unitCard.className = 'unit-card';
-            unitCard.innerHTML = `
-                <div class="unit-header">
-                    <h3>${unit.name}</h3>
-                    <span class="unit-status ${unit.isOnline ? 'online' : 'offline'}">
-                        ${unit.isOnline ? 'Online' : 'Offline'}
-                    </span>
-                </div>
-                <div class="unit-info">
-                    <p><strong>Tipo:</strong> ${unit.type}</p>
-                    <p><strong>Local:</strong> ${unit.location}</p>
-                    <p><strong>Última atualização:</strong> ${unit.lastUpdate ? new Date(unit.lastUpdate).toLocaleString() : 'Nunca'}</p>
-                </div>
-                <div class="unit-data" id="unit-data-${unit._id}">
-                    <p>Carregando dados...</p>
-                </div>
-            `;
-            container.appendChild(unitCard);
-            
-            // Carregar dados iniciais da unidade
-            loadUnitData(unit._id);
-        });
-        
-        // Adicionar botão de nova unidade se não existir
-        let addButton = document.getElementById('addUnitButton');
-        if (!addButton) {
-            addButton = document.createElement('button');
-            addButton.id = 'addUnitButton';
-            addButton.className = 'btn-primary add-unit-btn';
-            addButton.innerHTML = '+ Adicionar Unidade';
-            addButton.onclick = () => {
-                const modal = document.getElementById('addUnitModal');
-                if (modal) {
-                    modal.style.display = 'block';
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.log('🔐 Não autenticado, mostrando unidades públicas');
+                // Tenta buscar sem autenticação como fallback
+                const publicResponse = await fetch('/api/units/list');
+                if (publicResponse.ok) {
+                    const units = await publicResponse.json();
+                    displayUnits(units);
+                    return;
                 }
-            };
-            container.appendChild(addButton);
+            }
+            throw new Error(`Erro HTTP: ${response.status}`);
         }
+
+        const units = await response.json();
+        console.log(`✅ ${units.length} unidades carregadas`);
+        displayUnits(units);
+        
     } catch (error) {
-        console.error('Erro ao atualizar lista:', error);
+        console.error('❌ Erro ao atualizar lista:', error);
+        // Mostra mensagem amigável em vez de erro técnico
+        document.getElementById('unitsList').innerHTML = `
+            <div class="error-message">
+                ⚠️ Erro ao carregar unidades. 
+                <button onclick="updateUnitsList()">Tentar novamente</button>
+            </div>
+        `;
     }
 }
 
@@ -382,4 +390,5 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUnitsList();
 
 });
+
 
