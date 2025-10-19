@@ -1,23 +1,35 @@
 // Variáveis globais
-let currentSection = 'bases';
+let currentSection = 'users';
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     setupEventListeners();
-    loadBases();
+    loadUserStats();
 });
 
 // Verificação de autenticação
 function checkAuth() {
     const token = localStorage.getItem('token');
-    if (!token) {
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
         window.location.href = '/';
         return;
     }
 
-    const user = JSON.parse(localStorage.getItem('user'));
-    document.getElementById('username').textContent = user.username;
+    try {
+        const userData = JSON.parse(user);
+        if (userData.role !== 'admin') {
+            window.location.href = '/dashboard.html';
+            return;
+        }
+        
+        document.getElementById('username').textContent = userData.username;
+    } catch (error) {
+        console.error('❌ Erro ao verificar autenticação:', error);
+        window.location.href = '/';
+    }
 }
 
 // Setup de event listeners
@@ -29,8 +41,9 @@ function setupEventListeners() {
 
     // Botão de adicionar
     document.getElementById('addBtn').addEventListener('click', () => {
-        const modal = document.getElementById(`add${currentSection.slice(0, -1).charAt(0).toUpperCase() + currentSection.slice(1, -1)}Modal`);
-        modal.style.display = 'block';
+        if (currentSection === 'users') {
+            document.getElementById('createUserModal').style.display = 'block';
+        }
     });
 
     // Logout
@@ -41,8 +54,8 @@ function setupEventListeners() {
     });
 
     // Forms
-    document.getElementById('addBaseForm').addEventListener('submit', handleAddBase);
-    document.getElementById('addUserForm').addEventListener('submit', handleAddUser);
+    document.getElementById('createUserForm').addEventListener('submit', handleCreateUser);
+    document.getElementById('assignUnitForm').addEventListener('submit', handleAssignUnit);
 
     // Fechar modais ao clicar fora
     window.addEventListener('click', (e) => {
@@ -57,172 +70,182 @@ function switchSection(section) {
     currentSection = section;
     
     // Atualiza título
-    document.getElementById('sectionTitle').textContent = `Gerenciamento de ${section.charAt(0).toUpperCase() + section.slice(1)}`;
+    const titles = {
+        'users': 'Gerenciamento de Usuários',
+        'units': 'Gerenciamento de Unidades', 
+        'tools': 'Ferramentas de Administração'
+    };
+    document.getElementById('sectionTitle').textContent = titles[section];
     
     // Atualiza menu ativo
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.toggle('active', item.dataset.section === section);
     });
 
-    // Mostra/esconde listas
-    document.querySelectorAll('.grid-list').forEach(list => {
-        list.style.display = list.id === `${section}List` ? 'grid' : 'none';
+    // Mostra/esconde seções
+    document.querySelectorAll('.section-content').forEach(sectionEl => {
+        sectionEl.style.display = sectionEl.id === `${section}Section` ? 'block' : 'none';
     });
 
     // Carrega dados da seção
     switch(section) {
-        case 'bases':
-            loadBases();
-            break;
         case 'users':
             loadUsers();
             break;
         case 'units':
-            loadUnits();
+            loadUnitsData();
             break;
     }
 }
 
-// Carregar bases
-async function loadBases() {
-    try {
-        const response = await fetch('/api/bases', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+// ========== FUNÇÕES DO CONSOLE ==========
 
-        if (!response.ok) {
-            if (response.status === 404) {
-                console.warn('Endpoint /api/bases não encontrado. Verifique o servidor.');
-                displayBases([]); // Exibe lista vazia
-                return;
-            }
-            throw new Error(`Erro ${response.status} ao carregar bases`);
-        }
-
-        const bases = await response.json();
-        displayBases(bases);
-        updateBaseSelect(bases);
-    } catch (error) {
-        console.error('Erro ao carregar bases:', error);
-        if (error.name !== 'TypeError') { // Não mostra erro para CORS/network
-            showError('Erro ao carregar bases');
-        }
-        displayBases([]); // Exibe lista vazia em caso de erro
-    }
-}
-
-// Atualizar select de bases
-function updateBaseSelect(bases) {
-    const baseSelect = document.getElementById('userBase');
-    baseSelect.innerHTML = '';
+function logToConsole(message, type = 'info') {
+    const consoleOutput = document.getElementById('consoleOutput');
+    const line = document.createElement('div');
+    line.className = `console-line console-${type}`;
     
-    bases.forEach(base => {
-        const option = document.createElement('option');
-        option.value = base._id;
-        option.textContent = base.name;
-        baseSelect.appendChild(option);
-    });
+    const timestamp = new Date().toLocaleTimeString();
+    line.innerHTML = `<span style="opacity:0.7">[${timestamp}]</span> ${message}`;
+    
+    consoleOutput.appendChild(line);
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;
 }
 
-// Exibir bases
-// Exibir bases
-function displayBases(bases) {
-    const basesList = document.getElementById('basesList');
-    basesList.innerHTML = '';
-
-    if (!bases || bases.length === 0) {
-        basesList.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-building fa-3x"></i>
-                <h3>Nenhuma base encontrada</h3>
-                <p>Adicione uma nova base usando o botão "Adicionar".</p>
-            </div>
-        `;
-        return;
-    }
-
-    bases.forEach(base => {
-        const baseElement = document.createElement('div');
-        baseElement.className = 'grid-item';
-        baseElement.innerHTML = `
-            <div class="grid-item-header">
-                <h3 class="grid-item-title">${base.name}</h3>
-                <div class="grid-item-actions">
-                    <button class="btn-secondary btn-sm" onclick="editBase('${base._id}')">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="grid-item-info">
-                <div class="info-row">
-                    <span class="info-label">Unidades:</span>
-                    <span class="info-value">${base.units?.length || 0}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Usuários:</span>
-                    <span class="info-value">${base.users?.length || 0}</span>
-                </div>
-            </div>
-        `;
-        basesList.appendChild(baseElement);
-    });
+function clearConsole() {
+    document.getElementById('consoleOutput').innerHTML = `
+        <div class="console-line console-info">🧹 Console limpo</div>
+        <div class="console-line console-info">💡 Use os botões para executar ações</div>
+    `;
 }
 
-// Carregar usuários
-// Carregar usuários
-async function loadUsers() {
+// ========== GERENCIAMENTO DE USUÁRIOS ==========
+
+async function loadUserStats() {
     try {
-        const response = await fetch('/api/users', {
+        const response = await fetch('/api/admin/stats', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (response.ok) {
+            const stats = await response.json();
+            displayUserStats(stats);
+        }
+    } catch (error) {
+        console.log('Não foi possível carregar estatísticas');
+    }
+}
+
+function displayUserStats(stats) {
+    const statsContainer = document.getElementById('userStats');
+    statsContainer.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-number">${stats.totalUsers || 0}</div>
+            <div class="stat-label">Total de Usuários</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">${stats.adminUsers || 0}</div>
+            <div class="stat-label">Administradores</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">${stats.usersWithUnits || 0}</div>
+            <div class="stat-label">Usuários com Unidades</div>
+        </div>
+    `;
+}
+
+// Criar usuário
+async function createUser() {
+    document.getElementById('createUserModal').style.display = 'block';
+}
+
+async function handleCreateUser(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('newUsername').value;
+    const password = document.getElementById('newPassword').value;
+    const role = document.getElementById('newRole').value;
+
+    logToConsole(`👤 Criando usuário: ${username} (${role})...`, 'info');
+
+    try {
+        const response = await fetch('/api/admin/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ username, password, role })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            logToConsole(`✅ Usuário "${username}" criado com sucesso!`, 'success');
+            closeModal('createUserModal');
+            loadUsers();
+            loadUserStats();
+        } else {
+            logToConsole(`❌ Erro ao criar usuário: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        logToConsole(`❌ Erro de conexão: ${error.message}`, 'error');
+    }
+}
+
+// Listar usuários
+async function listUsers() {
+    logToConsole('📋 Carregando lista de usuários...', 'info');
+
+    try {
+        const response = await fetch('/api/admin/users', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
 
         if (!response.ok) {
-            if (response.status === 404) {
-                console.warn('Endpoint /api/users não encontrado. Verifique o servidor.');
-                displayUsers([]);
-                return;
-            }
-            throw new Error(`Erro ${response.status} ao carregar usuários`);
+            throw new Error(`Erro ${response.status}`);
         }
 
         const users = await response.json();
         displayUsers(users);
+        logToConsole(`✅ ${users.length} usuários carregados`, 'success');
+        
     } catch (error) {
-        console.error('Erro ao carregar usuários:', error);
-        if (error.name !== 'TypeError') {
-            showError('Erro ao carregar usuários');
-        }
+        logToConsole(`❌ Erro ao carregar usuários: ${error.message}`, 'error');
         displayUsers([]);
     }
 }
 
 // Exibir usuários
-// Exibir usuários
 function displayUsers(users) {
     const usersList = document.getElementById('usersList');
-    usersList.innerHTML = '';
-
+    
     if (!users || users.length === 0) {
         usersList.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-users fa-3x"></i>
                 <h3>Nenhum usuário encontrado</h3>
-                <p>Adicione um novo usuário usando o botão "Adicionar".</p>
+                <p>Use o botão "Criar Usuário" para adicionar um novo usuário.</p>
             </div>
         `;
         return;
     }
 
+    usersList.innerHTML = '';
+    
     users.forEach(user => {
         const userElement = document.createElement('div');
         userElement.className = 'grid-item';
         userElement.innerHTML = `
             <div class="grid-item-header">
-                <h3 class="grid-item-title">${user.username}</h3>
+                <h3 class="grid-item-title">
+                    ${user.username}
+                    <span class="role-badge ${user.role}">${user.role}</span>
+                </h3>
                 <div class="grid-item-actions">
                     <button class="btn-secondary btn-sm" onclick="editUser('${user._id}')">
                         <i class="fas fa-edit"></i>
@@ -234,154 +257,103 @@ function displayUsers(users) {
             </div>
             <div class="grid-item-info">
                 <div class="info-row">
-                    <span class="info-label">Base:</span>
-                    <span class="info-value">${user.base?.name || 'N/A'}</span>
+                    <span class="info-label">Unidades:</span>
+                    <span class="info-value">${user.units?.length || 0}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Permissão:</span>
-                    <span class="info-value">${user.role || 'Usuário'}</span>
+                    <span class="info-label">Criado em:</span>
+                    <span class="info-value">${new Date(user.createdAt).toLocaleDateString('pt-BR')}</span>
                 </div>
             </div>
         `;
         usersList.appendChild(userElement);
     });
 }
-// Adicionar usuário
-async function handleAddUser(e) {
-    e.preventDefault();
 
-    const formData = {
-        username: document.getElementById('userName').value,
-        password: document.getElementById('userPassword').value,
-        base: document.getElementById('userBase').value
-    };
+// Verificar estrutura dos usuários
+async function checkUserStructure() {
+    logToConsole('🔍 Verificando estrutura dos usuários...', 'info');
 
     try {
-        const response = await fetch('/api/users', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify(formData)
-        });
-
-        if (!response.ok) throw new Error('Erro ao criar usuário');
-
-        showSuccess('Usuário criado com sucesso');
-        closeModal('addUserModal');
-        loadUsers();
-    } catch (error) {
-        showError(error.message);
-    }
-}
-
-// Deletar usuário
-async function deleteUser(userId) {
-    if (!confirm('Tem certeza que deseja excluir este usuário?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/users/${userId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-
-        if (!response.ok) throw new Error('Erro ao deletar usuário');
-
-        showSuccess('Usuário deletado com sucesso');
-        loadUsers();
-    } catch (error) {
-        showError(error.message);
-    }
-}
-
-// Adicionar base
-async function handleAddBase(e) {
-    e.preventDefault();
-
-    const formData = {
-        name: document.getElementById('baseName').value,
-        description: document.getElementById('baseDescription').value,
-        adminUsername: document.getElementById('baseUsername').value,
-        adminPassword: document.getElementById('basePassword').value
-    };
-
-    try {
-        const response = await fetch('/api/bases', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify(formData)
-        });
-
-        if (!response.ok) throw new Error('Erro ao criar base');
-
-        showSuccess('Base criada com sucesso');
-        closeModal('addBaseModal');
-        loadBases();
-    } catch (error) {
-        showError(error.message);
-    }
-}
-
-// Carregar unidades
-async function loadUnits() {
-    try {
-        const response = await fetch('/api/units', {
+        const response = await fetch('/api/admin/users/structure', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
 
         if (!response.ok) {
-            if (response.status === 404) {
-                console.warn('Endpoint /api/units não encontrado');
-                displayUnits([]);
-                return;
+            throw new Error(`Erro ${response.status}`);
+        }
+
+        const structure = await response.json();
+        
+        structure.forEach((user, index) => {
+            logToConsole(`👤 ${user.username}: ${Object.keys(user).join(', ')}`, 'info');
+            logToConsole(`   🏭 Unidades: ${user.units ? user.units.length : 'campo não existe'}`, 
+                        user.units ? 'success' : 'warning');
+        });
+        
+        logToConsole(`✅ Verificação concluída - ${structure.length} usuários analisados`, 'success');
+        
+    } catch (error) {
+        logToConsole(`❌ Erro na verificação: ${error.message}`, 'error');
+    }
+}
+
+// ========== GERENCIAMENTO DE UNIDADES ==========
+
+async function loadUnitsData() {
+    await listUnits();
+}
+
+// Listar unidades
+async function listUnits() {
+    logToConsole('🏭 Carregando lista de unidades...', 'info');
+
+    try {
+        const response = await fetch('/api/admin/units', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
-            throw new Error(`Erro ${response.status} ao carregar unidades`);
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro ${response.status}`);
         }
 
         const units = await response.json();
         displayUnits(units);
+        logToConsole(`✅ ${units.length} unidades carregadas`, 'success');
+        
     } catch (error) {
-        console.error('Erro ao carregar unidades:', error);
-        if (error.name !== 'TypeError') {
-            showError('Erro ao carregar unidades');
-        }
+        logToConsole(`❌ Erro ao carregar unidades: ${error.message}`, 'error');
         displayUnits([]);
     }
 }
 
-// Exibir unidades (função placeholder)
+// Exibir unidades
 function displayUnits(units) {
     const unitsList = document.getElementById('unitsList');
-    unitsList.innerHTML = '';
-
-    if (units.length === 0) {
+    
+    if (!units || units.length === 0) {
         unitsList.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-water fa-3x"></i>
                 <h3>Nenhuma unidade encontrada</h3>
-                <p>As unidades serão exibidas aqui quando disponíveis.</p>
+                <p>As unidades do sistema aparecerão aqui.</p>
             </div>
         `;
         return;
     }
 
-    // Implementar exibição de unidades quando a API estiver disponível
+    unitsList.innerHTML = '';
+    
     units.forEach(unit => {
         const unitElement = document.createElement('div');
         unitElement.className = 'grid-item';
         unitElement.innerHTML = `
             <div class="grid-item-header">
-                <h3 class="grid-item-title">${unit.name || 'Unidade'}</h3>
+                <h3 class="grid-item-title">${unit.name}</h3>
                 <div class="grid-item-actions">
                     <button class="btn-secondary btn-sm">
                         <i class="fas fa-edit"></i>
@@ -390,8 +362,22 @@ function displayUnits(units) {
             </div>
             <div class="grid-item-info">
                 <div class="info-row">
+                    <span class="info-label">Localização:</span>
+                    <span class="info-value">${unit.location}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Tipo:</span>
+                    <span class="info-value">${unit.type}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Sensores:</span>
+                    <span class="info-value">${unit.numberOfSensors}</span>
+                </div>
+                <div class="info-row">
                     <span class="info-label">Status:</span>
-                    <span class="info-value">${unit.status || 'N/A'}</span>
+                    <span class="info-value ${unit.isOnline ? 'online' : 'offline'}">
+                        ${unit.isOnline ? '🟢 Online' : '🔴 Offline'}
+                    </span>
                 </div>
             </div>
         `;
@@ -399,14 +385,132 @@ function displayUnits(units) {
     });
 }
 
-// Funções auxiliares
-function showSuccess(message) {
-    Notifications.success(message);
+// Associar unidade a usuário
+async function assignUnitToUser() {
+    logToConsole('🔗 Preparando associação de unidade...', 'info');
+
+    try {
+        // Carrega usuários
+        const usersResponse = await fetch('/api/admin/users', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        const users = await usersResponse.json();
+
+        // Carrega unidades
+        const unitsResponse = await fetch('/api/admin/units', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        const units = await unitsResponse.json();
+
+        // Preenche os selects
+        const userSelect = document.getElementById('selectUser');
+        const unitSelect = document.getElementById('selectUnit');
+
+        userSelect.innerHTML = '';
+        unitSelect.innerHTML = '';
+
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user._id;
+            option.textContent = `${user.username} (${user.role})`;
+            userSelect.appendChild(option);
+        });
+
+        units.forEach(unit => {
+            const option = document.createElement('option');
+            option.value = unit._id;
+            option.textContent = `${unit.name} - ${unit.location}`;
+            unitSelect.appendChild(option);
+        });
+
+        document.getElementById('assignUnitModal').style.display = 'block';
+        logToConsole('✅ Modal de associação carregado', 'success');
+        
+    } catch (error) {
+        logToConsole(`❌ Erro ao carregar dados: ${error.message}`, 'error');
+    }
 }
 
-function showError(message) {
-    Notifications.error(message);
+async function handleAssignUnit(e) {
+    e.preventDefault();
+
+    const userId = document.getElementById('selectUser').value;
+    const unitId = document.getElementById('selectUnit').value;
+
+    const userSelect = document.getElementById('selectUser');
+    const unitSelect = document.getElementById('selectUnit');
+    
+    const userName = userSelect.options[userSelect.selectedIndex].text;
+    const unitName = unitSelect.options[unitSelect.selectedIndex].text;
+
+    logToConsole(`🔗 Associando: ${userName} ← ${unitName}`, 'info');
+
+    try {
+        const response = await fetch('/api/admin/assign-unit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ userId, unitId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            logToConsole(`✅ Unidade associada com sucesso!`, 'success');
+            closeModal('assignUnitModal');
+            loadUsers();
+        } else {
+            logToConsole(`❌ Erro na associação: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        logToConsole(`❌ Erro de conexão: ${error.message}`, 'error');
+    }
 }
+
+// ========== FERRAMENTAS ==========
+
+async function runDatabaseDiagnostic() {
+    logToConsole('🩺 Iniciando diagnóstico do banco de dados...', 'info');
+
+    try {
+        const response = await fetch('/api/admin/diagnostic', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro ${response.status}`);
+        }
+
+        const diagnostic = await response.json();
+        
+        logToConsole(`📊 ESTATÍSTICAS DO BANCO:`, 'info');
+        logToConsole(`   👤 Usuários: ${diagnostic.usersCount}`, 'info');
+        logToConsole(`   🏭 Unidades: ${diagnostic.unitsCount}`, 'info');
+        logToConsole(`   🔗 Associações: ${diagnostic.associationsCount}`, 'info');
+        
+        if (diagnostic.issues && diagnostic.issues.length > 0) {
+            logToConsole('⚠️ PROBLEMAS ENCONTRADOS:', 'warning');
+            diagnostic.issues.forEach(issue => {
+                logToConsole(`   • ${issue}`, 'warning');
+            });
+        } else {
+            logToConsole('✅ Nenhum problema encontrado', 'success');
+        }
+        
+    } catch (error) {
+        logToConsole(`❌ Erro no diagnóstico: ${error.message}`, 'error');
+    }
+}
+
+// ========== FUNÇÕES AUXILIARES ==========
 
 function closeModal(modalId = null) {
     let modal;
@@ -414,7 +518,6 @@ function closeModal(modalId = null) {
     if (modalId) {
         modal = document.getElementById(modalId);
     } else {
-        // Se não especificou o modal, fecha todos os modais abertos
         const modals = document.querySelectorAll('.modal');
         modals.forEach(modal => {
             modal.style.display = 'none';
@@ -425,7 +528,40 @@ function closeModal(modalId = null) {
     
     if (modal) {
         modal.style.display = 'none';
-        // Limpa o formulário
         modal.querySelector('form')?.reset();
     }
 }
+
+// Funções placeholder para ações futuras
+function editUser(userId) {
+    logToConsole(`✏️ Editando usuário ${userId}...`, 'info');
+}
+
+async function deleteUser(userId) {
+    if (!confirm('Tem certeza que deseja excluir este usuário?')) {
+        return;
+    }
+
+    logToConsole(`🗑️ Excluindo usuário ${userId}...`, 'warning');
+
+    try {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (response.ok) {
+            logToConsole('✅ Usuário excluído com sucesso', 'success');
+            loadUsers();
+            loadUserStats();
+        } else {
+            throw new Error('Erro ao excluir usuário');
+        }
+    } catch (error) {
+        logToConsole(`❌ Erro ao excluir usuário: ${error.message}`, 'error');
+    }
+}
+
+console.log('✅ Painel de Administração carregado!');
