@@ -248,6 +248,51 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.get('/api/migrate-units', async (req, res) => {
+    try {
+        const User = require('./database/models/User');
+        const Unit = require('./database/models/Unit');
+        
+        console.log('🔄 Migrando unidades para multitenant...');
+        
+        // Buscar todas as unidades existentes
+        const units = await Unit.find({});
+        const adminUser = await User.findOne({ username: 'admin' });
+        
+        if (!adminUser) {
+            return res.json({ error: 'Usuário admin não encontrado' });
+        }
+        
+        let migrated = 0;
+        
+        // Associar cada unidade ao admin e adicionar createdBy
+        for (let unit of units) {
+            if (!unit.createdBy) {
+                unit.createdBy = adminUser._id;
+                await unit.save();
+                
+                // Adicionar à lista de unidades do admin
+                await User.findByIdAndUpdate(
+                    adminUser._id,
+                    { $addToSet: { units: unit._id } }
+                );
+                
+                migrated++;
+            }
+        }
+        
+        res.json({ 
+            message: `✅ ${migrated} unidades migradas para o usuário admin`,
+            admin: adminUser.username,
+            totalUnits: units.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro na migração:', error);
+        res.status(500).json({ error: 'Erro na migração' });
+    }
+});
+
 // Endpoint para gerenciar unidades
 app.get('/manage-units', async (req, res) => {
   try {
@@ -428,6 +473,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
