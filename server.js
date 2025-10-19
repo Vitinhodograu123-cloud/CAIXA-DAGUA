@@ -424,6 +424,413 @@ app.get('/create-test-unit', async (req, res) => {
   }
 });
 
+// =============================================
+// ROTAS PARA O PAINEL DE ADMINISTRAÇÃO
+// =============================================
+
+// GET /api/admin/users - Listar todos os usuários (apenas admin)
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        console.log('📋 Admin: Listando todos os usuários...');
+        
+        // Verificar autenticação e permissão de admin
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Não autenticado' });
+        }
+
+        let userId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            userId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        // Verificar se o usuário é admin
+        const User = require('./database/models/User');
+        const user = await User.findById(userId);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
+        }
+
+        // Buscar todos os usuários
+        const users = await User.find({})
+            .select('-password') // Não retornar senhas
+            .populate('units', 'name location type')
+            .populate('base', 'name');
+
+        console.log(`✅ Admin: ${users.length} usuários encontrados`);
+        res.json(users);
+        
+    } catch (error) {
+        console.error('❌ Erro ao listar usuários (admin):', error);
+        res.status(500).json({ error: 'Erro ao listar usuários' });
+    }
+});
+
+// GET /api/admin/units - Listar todas as unidades (apenas admin)
+app.get('/api/admin/units', async (req, res) => {
+    try {
+        console.log('🏭 Admin: Listando todas as unidades...');
+        
+        // Verificar autenticação e permissão de admin
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Não autenticado' });
+        }
+
+        let userId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            userId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        // Verificar se o usuário é admin
+        const User = require('./database/models/User');
+        const user = await User.findById(userId);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
+        }
+
+        // Buscar todas as unidades
+        const units = await Unit.find({})
+            .populate('createdBy', 'username')
+            .sort({ createdAt: -1 });
+
+        console.log(`✅ Admin: ${units.length} unidades encontradas`);
+        res.json(units);
+        
+    } catch (error) {
+        console.error('❌ Erro ao listar unidades (admin):', error);
+        res.status(500).json({ error: 'Erro ao listar unidades' });
+    }
+});
+
+// POST /api/admin/users - Criar novo usuário (apenas admin)
+app.post('/api/admin/users', async (req, res) => {
+    try {
+        console.log('👤 Admin: Criando novo usuário...');
+        
+        const { username, password, role } = req.body;
+
+        // Verificar autenticação e permissão de admin
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Não autenticado' });
+        }
+
+        let adminId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            adminId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        // Verificar se o usuário é admin
+        const User = require('./database/models/User');
+        const adminUser = await User.findById(adminId);
+        if (!adminUser || adminUser.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
+        }
+
+        // Validar dados
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username e senha são obrigatórios' });
+        }
+
+        // Verificar se usuário já existe
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Usuário já existe' });
+        }
+
+        // Criar novo usuário
+        const bcrypt = require('bcryptjs');
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        const newUser = new User({
+            username,
+            password: hashedPassword,
+            role: role || 'user',
+            units: [],
+            createdAt: new Date()
+        });
+
+        await newUser.save();
+
+        console.log(`✅ Admin: Usuário "${username}" criado com sucesso por ${adminUser.username}`);
+
+        res.json({
+            success: true,
+            user: {
+                _id: newUser._id,
+                username: newUser.username,
+                role: newUser.role,
+                createdAt: newUser.createdAt
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao criar usuário (admin):', error);
+        res.status(500).json({ error: 'Erro ao criar usuário' });
+    }
+});
+
+// POST /api/admin/assign-unit - Associar unidade a usuário (apenas admin)
+app.post('/api/admin/assign-unit', async (req, res) => {
+    try {
+        console.log('🔗 Admin: Associando unidade a usuário...');
+        
+        const { userId, unitId } = req.body;
+
+        // Verificar autenticação e permissão de admin
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Não autenticado' });
+        }
+
+        let adminId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            adminId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        // Verificar se o usuário é admin
+        const User = require('./database/models/User');
+        const adminUser = await User.findById(adminId);
+        if (!adminUser || adminUser.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
+        }
+
+        // Verificar se usuário e unidade existem
+        const user = await User.findById(userId);
+        const unit = await Unit.findById(unitId);
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        if (!unit) {
+            return res.status(404).json({ error: 'Unidade não encontrada' });
+        }
+
+        // Associar unidade ao usuário
+        await User.findByIdAndUpdate(
+            userId,
+            { $addToSet: { units: unitId } }
+        );
+
+        console.log(`✅ Admin: Unidade "${unit.name}" associada ao usuário "${user.username}" por ${adminUser.username}`);
+
+        res.json({
+            success: true,
+            message: `Unidade "${unit.name}" associada ao usuário "${user.username}"`
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao associar unidade (admin):', error);
+        res.status(500).json({ error: 'Erro ao associar unidade' });
+    }
+});
+
+// GET /api/admin/stats - Estatísticas do sistema (apenas admin)
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        console.log('📊 Admin: Gerando estatísticas...');
+        
+        // Verificar autenticação e permissão de admin
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Não autenticado' });
+        }
+
+        let userId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            userId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        // Verificar se o usuário é admin
+        const User = require('./database/models/User');
+        const user = await User.findById(userId);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
+        }
+
+        // Buscar estatísticas
+        const totalUsers = await User.countDocuments();
+        const adminUsers = await User.countDocuments({ role: 'admin' });
+        const totalUnits = await Unit.countDocuments();
+        
+        // Usuários com unidades
+        const usersWithUnits = await User.countDocuments({
+            units: { $exists: true, $not: { $size: 0 } }
+        });
+
+        // Unidades online
+        const onlineUnits = await Unit.countDocuments({ isOnline: true });
+
+        console.log(`✅ Admin: Estatísticas geradas - ${totalUsers} usuários, ${totalUnits} unidades`);
+
+        res.json({
+            totalUsers,
+            adminUsers,
+            totalUnits,
+            onlineUnits,
+            usersWithUnits,
+            timestamp: new Date()
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao gerar estatísticas (admin):', error);
+        res.status(500).json({ error: 'Erro ao gerar estatísticas' });
+    }
+});
+
+// GET /api/admin/diagnostic - Diagnóstico do sistema (apenas admin)
+app.get('/api/admin/diagnostic', async (req, res) => {
+    try {
+        console.log('🩺 Admin: Executando diagnóstico...');
+        
+        // Verificar autenticação e permissão de admin
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Não autenticado' });
+        }
+
+        let userId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            userId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        // Verificar se o usuário é admin
+        const User = require('./database/models/User');
+        const user = await User.findById(userId);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
+        }
+
+        // Coletar dados para diagnóstico
+        const users = await User.find({});
+        const units = await Unit.find({});
+        
+        const issues = [];
+        
+        // Verificar problemas
+        if (users.length === 0) {
+            issues.push('Nenhum usuário cadastrado no sistema');
+        }
+        
+        if (units.length === 0) {
+            issues.push('Nenhuma unidade cadastrada no sistema');
+        }
+        
+        // Verificar usuários sem role
+        const usersWithoutRole = users.filter(u => !u.role);
+        if (usersWithoutRole.length > 0) {
+            issues.push(`${usersWithoutRole.length} usuários sem role definida`);
+        }
+        
+        // Verificar unidades sem createdBy
+        const unitsWithoutOwner = units.filter(u => !u.createdBy);
+        if (unitsWithoutOwner.length > 0) {
+            issues.push(`${unitsWithoutOwner.length} unidades sem proprietário definido`);
+        }
+
+        console.log(`✅ Admin: Diagnóstico completo - ${issues.length} problemas encontrados`);
+
+        res.json({
+            usersCount: users.length,
+            unitsCount: units.length,
+            onlineUnits: units.filter(u => u.isOnline).length,
+            issues,
+            database: 'MongoDB',
+            status: issues.length === 0 ? 'healthy' : 'needs_attention',
+            timestamp: new Date()
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro no diagnóstico (admin):', error);
+        res.status(500).json({ error: 'Erro no diagnóstico do sistema' });
+    }
+});
+
+// DELETE /api/admin/users/:id - Deletar usuário (apenas admin)
+app.delete('/api/admin/users/:id', async (req, res) => {
+    try {
+        console.log('🗑️ Admin: Deletando usuário...');
+        
+        const userId = req.params.id;
+
+        // Verificar autenticação e permissão de admin
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Não autenticado' });
+        }
+
+        let adminId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            adminId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        // Verificar se o usuário é admin
+        const User = require('./database/models/User');
+        const adminUser = await User.findById(adminId);
+        if (!adminUser || adminUser.role !== 'admin') {
+            return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
+        }
+
+        // Não permitir deletar a si mesmo
+        if (userId === adminId) {
+            return res.status(400).json({ error: 'Não é possível deletar seu próprio usuário' });
+        }
+
+        // Buscar e deletar usuário
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        await User.findByIdAndDelete(userId);
+
+        console.log(`✅ Admin: Usuário "${user.username}" deletado por ${adminUser.username}`);
+
+        res.json({
+            success: true,
+            message: `Usuário "${user.username}" deletado com sucesso`
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao deletar usuário (admin):', error);
+        res.status(500).json({ error: 'Erro ao deletar usuário' });
+    }
+});
+
+// =============================================
+// FIM DAS ROTAS DO ADMIN
+// =============================================
+
 // Verificar conexões das unidades periodicamente
 setInterval(async () => {
   try {
@@ -473,6 +880,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
