@@ -20,7 +20,17 @@ const io = new Server(server, {
 });
 
 // Middleware
-app.use(cors());
+// Configuração de CORS para produção
+app.use(cors({
+    origin: [
+        'https://acquatrack.onrender.com',
+        'http://localhost:3000',
+        'http://192.168.100.120:3000'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
+}));
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -377,5 +387,6 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
