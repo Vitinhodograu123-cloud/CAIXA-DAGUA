@@ -8,23 +8,87 @@ let currentUnit = null;
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Dashboard inicializando...');
     checkAuth();
+    setupMobileMenu(); // ← ADICIONADO
     setupEventListeners();
     loadUnits();
 });
+
+// Configuração do menu mobile
+function setupMobileMenu() {
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.querySelector('.sidebar');
+    let sidebarOverlay = document.querySelector('.sidebar-overlay');
+    
+    // Cria o overlay se não existir
+    if (!sidebarOverlay) {
+        sidebarOverlay = document.createElement('div');
+        sidebarOverlay.className = 'sidebar-overlay';
+        document.body.appendChild(sidebarOverlay);
+    }
+
+    // Toggle do menu
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+        });
+    }
+
+    // Fechar menu ao clicar no overlay
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    });
+
+    // Fechar menu ao selecionar uma unidade (no mobile)
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && 
+            sidebar.classList.contains('active') && 
+            e.target.closest('.unit-item')) {
+            closeMobileMenu();
+        }
+    });
+
+    // Fechar menu ao redimensionar para desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            closeMobileMenu();
+        }
+    });
+}
+
+// Fechar menu mobile
+function closeMobileMenu() {
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.remove('active');
+    sidebarOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
 
 // Verificação de autenticação
 function checkAuth() {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
     
-    if (!token || !user) {
+    if (!token || !user || !isTokenValid()) {
+        console.log('🔐 Token inválido ou expirado, redirecionando...');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         window.location.href = '/';
         return;
     }
 
     try {
         const userData = JSON.parse(user);
-        document.getElementById('username').textContent = userData.username;
+        // Atualiza o username em todos os lugares
+        const usernameElements = document.querySelectorAll('#username, .username');
+        usernameElements.forEach(element => {
+            element.textContent = userData.username;
+        });
 
         // Mostra botão de adicionar unidade apenas para admin
         if (userData.role === 'admin') {
@@ -33,6 +97,21 @@ function checkAuth() {
     } catch (error) {
         console.error('❌ Erro ao verificar autenticação:', error);
         window.location.href = '/';
+    }
+}
+
+// Verificar se o token é válido
+function isTokenValid() {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        // Decodifica o token JWT para verificar expiração
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const exp = payload.exp * 1000; // Converte para milissegundos
+        return Date.now() < exp;
+    } catch (error) {
+        return false;
     }
 }
 
@@ -88,7 +167,6 @@ async function loadUnits() {
         if (!response.ok) {
             if (response.status === 401) {
                 console.log('🔐 Token inválido ou expirado');
-                // Redireciona para login se não autenticado
                 window.location.href = '/';
                 return;
             }
@@ -160,7 +238,7 @@ function selectUnit(unit, unitElement = null) {
     currentUnit = unit;
     
     // Atualiza o título
-    document.getElementById('currentUnit').textContent = unit.name;
+    updateUnitTitle(unit);
     document.getElementById('noSelection').style.display = 'none';
     document.getElementById('tankContent').style.display = 'block';
 
@@ -184,6 +262,29 @@ function selectUnit(unit, unitElement = null) {
 
     // Carrega dados da unidade
     loadUnitData(unit._id);
+
+    // Fecha o menu no mobile após seleção
+    if (window.innerWidth <= 768) {
+        closeMobileMenu();
+    }
+}
+
+// Atualizar título da unidade (com suporte a mobile)
+function updateUnitTitle(unit) {
+    const currentUnitElement = document.getElementById('currentUnit');
+    
+    if (window.innerWidth <= 768) {
+        // Formato compacto para mobile
+        currentUnitElement.innerHTML = `
+            ${unit.name}
+            <small style="display: block; font-size: 0.7em; opacity: 0.8; margin-top: 0.25rem;">
+                📍 ${unit.location} • ${unit.type}
+            </small>
+        `;
+    } else {
+        // Formato normal para desktop
+        currentUnitElement.textContent = unit.name;
+    }
 }
 
 // Carregar dados da unidade
@@ -237,24 +338,31 @@ function displayUnitData(data) {
         return;
     }
 
+    // Formata os dados para exibição
+    const waterLevel = data.waterLevel || 0;
+    const temperature = data.temperature || 0;
+    const vibrationCount = data.vibrationCount || 0;
+    const isVibrating = data.isVibrating || false;
+    const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString('pt-BR') : 'Nunca';
+
     tanksGrid.innerHTML = `
         <div class="data-display">
             <div class="data-item ${data.isLowLevel ? 'warning' : ''}">
                 <span class="data-label">💧 Nível de Água:</span>
-                <span class="data-value">${data.waterLevel || 0}%</span>
+                <span class="data-value">${waterLevel}%</span>
                 ${data.isLowLevel ? '<span class="alert-badge">⚠️ Baixo</span>' : ''}
             </div>
             <div class="data-item ${data.isHighTemp ? 'warning' : ''}">
                 <span class="data-label">🌡️ Temperatura:</span>
-                <span class="data-value">${data.temperature || 0}°C</span>
+                <span class="data-value">${temperature}°C</span>
                 ${data.isHighTemp ? '<span class="alert-badge">⚠️ Alta</span>' : ''}
             </div>
             <div class="data-item">
                 <span class="data-label">🔢 Contagem de Vibrações:</span>
-                <span class="data-value">${data.vibrationCount || 0}</span>
+                <span class="data-value">${vibrationCount}</span>
             </div>
             <div class="update-time">
-                ⏰ Última atualização: ${data.timestamp ? new Date(data.timestamp).toLocaleString('pt-BR') : 'Nunca'}
+                ⏰ Última atualização: ${timestamp}
             </div>
         </div>
     `;
@@ -315,46 +423,6 @@ async function handleAddUnit(e) {
     }
 }
 
-function isTokenValid() {
-    const token = localStorage.getItem('token');
-    if (!token) return false;
-    
-    try {
-        // Decodifica o token JWT para verificar expiração
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const exp = payload.exp * 1000; // Converte para milissegundos
-        return Date.now() < exp;
-    } catch (error) {
-        return false;
-    }
-}
-
-// Atualize a função checkAuth para verificar expiração
-function checkAuth() {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    
-    if (!token || !user || !isTokenValid()) {
-        console.log('🔐 Token inválido ou expirado, redirecionando...');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/';
-        return;
-    }
-
-    try {
-        const userData = JSON.parse(user);
-        document.getElementById('username').textContent = userData.username;
-
-        // Mostra botão de adicionar unidade apenas para admin
-        if (userData.role === 'admin') {
-            document.getElementById('addUnitBtn').style.display = 'block';
-        }
-    } catch (error) {
-        console.error('❌ Erro ao verificar autenticação:', error);
-        window.location.href = '/';
-    }
-}
 // Fechar modal
 function closeModal() {
     const modal = document.getElementById('addUnitModal');
@@ -379,6 +447,9 @@ socket.on('unitUpdate', (data) => {
     if (currentUnit && data.unitId === currentUnit._id.toString()) {
         console.log('🔄 Atualizando dados da unidade atual...');
         displayUnitData(data.data);
+        
+        // Atualiza o status online/offline na lista
+        updateUnitStatus(data.unitId, true);
     }
 });
 
@@ -387,17 +458,53 @@ socket.on('newUnit', (data) => {
     loadUnits();
 });
 
+socket.on('unitOffline', (data) => {
+    console.log('🔴 Unidade offline:', data);
+    if (currentUnit && data.unitId === currentUnit._id.toString()) {
+        updateUnitStatus(data.unitId, false);
+    }
+});
+
 socket.on('disconnect', () => {
     console.log('🔌 Desconectado do servidor Socket.IO');
 });
+
+// Atualizar status da unidade na lista
+function updateUnitStatus(unitId, isOnline) {
+    const unitItems = document.querySelectorAll('.unit-item');
+    unitItems.forEach(item => {
+        const unitName = item.querySelector('h3').textContent;
+        // Aqui você precisaria de uma maneira de associar o unitId com o elemento
+        // Por enquanto, vamos atualizar a unidade atual se for a selecionada
+        if (currentUnit && currentUnit._id === unitId) {
+            const statusElement = item.querySelector('.unit-status');
+            if (statusElement) {
+                statusElement.className = `unit-status ${isOnline ? 'online' : 'offline'}`;
+                statusElement.textContent = isOnline ? '🟢 Online' : '🔴 Offline';
+            }
+        }
+    });
+}
 
 // Funções auxiliares para debug
 window.debugDashboard = {
     reloadUnits: () => loadUnits(),
     showCurrentUnit: () => console.log('Unidade atual:', currentUnit),
-    testSocket: () => socket.emit('test', { message: 'Teste do dashboard' })
+    testSocket: () => socket.emit('test', { message: 'Teste do dashboard' }),
+    toggleMenu: () => {
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.querySelector('.sidebar-overlay');
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+    }
 };
 
+// Adiciona listener para redimensionamento da tela
+window.addEventListener('resize', () => {
+    // Atualiza o título da unidade quando a tela é redimensionada
+    if (currentUnit) {
+        updateUnitTitle(currentUnit);
+    }
+});
+
 console.log('✅ Dashboard carregado e pronto!');
-
-
