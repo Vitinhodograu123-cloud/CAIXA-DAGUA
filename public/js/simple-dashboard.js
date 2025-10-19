@@ -249,10 +249,6 @@ function displayUnitData(data) {
                 <span class="data-value">${data.temperature || 0}°C</span>
                 ${data.isHighTemp ? '<span class="alert-badge">⚠️ Alta</span>' : ''}
             </div>
-            <div class="data-item ${data.isVibrating ? 'warning' : ''}">
-                <span class="data-label">📳 Vibração:</span>
-                <span class="data-value">${data.isVibrating ? '🔴 Detectada' : '🟢 Normal'}</span>
-            </div>
             <div class="data-item">
                 <span class="data-label">🔢 Contagem de Vibrações:</span>
                 <span class="data-value">${data.vibrationCount || 0}</span>
@@ -403,4 +399,5 @@ window.debugDashboard = {
 };
 
 console.log('✅ Dashboard carregado e pronto!');
+
 
