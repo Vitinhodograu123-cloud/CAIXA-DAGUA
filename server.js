@@ -75,24 +75,38 @@ app.get('/api/units/list', async (req, res) => {
     try {
         console.log('📋 Buscando unidades para dashboard...');
         
-        // Tenta autenticação, mas se falhar, ainda retorna as unidades
+        // Verificar autenticação
         const token = req.headers.authorization?.replace('Bearer ', '');
+        let userUnits = [];
         
         if (token) {
             try {
                 const jwt = require('jsonwebtoken');
                 const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
                 
-                // Se autenticado, pode fazer lógica adicional se necessário
-                console.log('✅ Usuário autenticado:', decoded.userId);
+                // Buscar o usuário para pegar suas unidades
+                const User = require('./database/models/User');
+                const user = await User.findById(decoded.userId);
+                
+                if (user && user.units) {
+                    userUnits = user.units;
+                    console.log(`✅ Usuário ${user.username} tem ${user.units.length} unidades`);
+                }
             } catch (authError) {
-                console.log('⚠️  Token inválido, mas continuando...');
-                // Continua mesmo com token inválido
+                console.log('⚠️  Token inválido');
             }
         }
 
-        const units = await Unit.find({});
-        console.log(`✅ Encontradas ${units.length} unidades`);
+        // Se o usuário tem unidades específicas, filtra por elas
+        // Se não tem unidades (array vazio) ou é admin, mostra todas
+        let units;
+        if (userUnits.length > 0) {
+            units = await Unit.find({ _id: { $in: userUnits } });
+            console.log(`🔍 Filtrando ${units.length} unidades do usuário`);
+        } else {
+            units = await Unit.find({});
+            console.log(`🔍 Mostrando TODAS as ${units.length} unidades (usuário sem unidades específicas)`);
+        }
         
         res.json(units);
     } catch (error) {
@@ -387,6 +401,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
