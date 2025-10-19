@@ -6,8 +6,123 @@
     <title>Administração - Sistema de Monitoramento</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/admin.css">
-    <link rel="stylesheet" href="css/notifications.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .action-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .action-btn.secondary {
+            background: var(--gradient-secondary);
+        }
+
+        .action-btn.success {
+            background: var(--gradient-success);
+        }
+
+        .action-btn.warning {
+            background: var(--gradient-warning);
+            color: var(--dark-color);
+        }
+
+        .console-output {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            border: 1px solid #333;
+        }
+
+        .console-line {
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+
+        .console-error {
+            color: #ff6b6b;
+        }
+
+        .console-success {
+            color: #51cf66;
+        }
+
+        .console-warning {
+            color: #ffd43b;
+        }
+
+        .console-info {
+            color: #339af0;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
 <body>
     <div class="admin-dashboard">
@@ -18,14 +133,14 @@
             </div>
             <div class="sidebar-menu">
                 <ul>
-                    <li class="menu-item active" data-section="bases">
-                        <i class="fas fa-building"></i> Bases
-                    </li>
-                    <li class="menu-item" data-section="users">
+                    <li class="menu-item active" data-section="users">
                         <i class="fas fa-users"></i> Usuários
                     </li>
                     <li class="menu-item" data-section="units">
                         <i class="fas fa-water"></i> Unidades
+                    </li>
+                    <li class="menu-item" data-section="tools">
+                        <i class="fas fa-tools"></i> Ferramentas
                     </li>
                 </ul>
             </div>
@@ -38,7 +153,7 @@
         <!-- Main Content -->
         <main class="main-content">
             <header class="main-header">
-                <h1 id="sectionTitle">Gerenciamento de Bases</h1>
+                <h1 id="sectionTitle">Gerenciamento de Usuários</h1>
                 <div class="header-actions">
                     <button id="addBtn" class="btn-primary">
                         <i class="fas fa-plus"></i> Adicionar
@@ -46,78 +161,126 @@
                 </div>
             </header>
 
-            <div id="basesList" class="grid-list">
-                <!-- Bases serão carregadas aqui -->
+            <!-- Seção de Usuários -->
+            <div id="usersSection" class="section-content">
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="createUser()">
+                        <i class="fas fa-user-plus"></i> Criar Usuário
+                    </button>
+                    <button class="action-btn secondary" onclick="listUsers()">
+                        <i class="fas fa-list"></i> Listar Usuários
+                    </button>
+                    <button class="action-btn success" onclick="checkUserStructure()">
+                        <i class="fas fa-search"></i> Verificar Estrutura
+                    </button>
+                </div>
+
+                <div class="user-stats" id="userStats">
+                    <!-- Estatísticas serão carregadas aqui -->
+                </div>
+
+                <div id="usersList" class="grid-list">
+                    <!-- Usuários serão carregados aqui -->
+                </div>
             </div>
 
-            <div id="usersList" class="grid-list" style="display: none;">
-                <!-- Usuários serão carregados aqui -->
+            <!-- Seção de Unidades -->
+            <div id="unitsSection" class="section-content" style="display: none;">
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="listUnits()">
+                        <i class="fas fa-list"></i> Listar Unidades
+                    </button>
+                    <button class="action-btn secondary" onclick="assignUnitToUser()">
+                        <i class="fas fa-link"></i> Associar Unidade
+                    </button>
+                </div>
+
+                <div id="unitsList" class="grid-list">
+                    <!-- Unidades serão carregadas aqui -->
+                </div>
             </div>
 
-            <div id="unitsList" class="grid-list" style="display: none;">
-                <!-- Unidades serão carregadas aqui -->
+            <!-- Seção de Ferramentas -->
+            <div id="toolsSection" class="section-content" style="display: none;">
+                <div class="action-buttons">
+                    <button class="action-btn warning" onclick="runDatabaseDiagnostic()">
+                        <i class="fas fa-stethoscope"></i> Diagnóstico do Banco
+                    </button>
+                    <button class="action-btn" onclick="clearConsole()">
+                        <i class="fas fa-broom"></i> Limpar Console
+                    </button>
+                </div>
+
+                <div class="console-output" id="consoleOutput">
+                    <div class="console-line console-info">🚀 Console de Administração Iniciado</div>
+                    <div class="console-line console-info">💡 Use os botões acima para executar ações</div>
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- Modal para adicionar base -->
-    <div id="addBaseModal" class="modal">
+    <!-- Modal para criar usuário -->
+    <div id="createUserModal" class="modal">
         <div class="modal-content">
-            <h2>Adicionar Nova Base</h2>
-            <form id="addBaseForm">
+            <h2><i class="fas fa-user-plus"></i> Criar Novo Usuário</h2>
+            <form id="createUserForm">
                 <div class="form-group">
-                    <label for="baseName">Nome da Base</label>
-                    <input type="text" id="baseName" required placeholder="Ex: THE ONE">
+                    <label for="newUsername">Username</label>
+                    <input type="text" id="newUsername" required placeholder="Digite o username">
                 </div>
                 <div class="form-group">
-                    <label for="baseDescription">Descrição</label>
-                    <textarea id="baseDescription" placeholder="Descrição da base"></textarea>
+                    <label for="newPassword">Senha</label>
+                    <input type="password" id="newPassword" required placeholder="Digite a senha">
                 </div>
                 <div class="form-group">
-                    <label for="baseUsername">Usuário</label>
-                    <input type="text" id="baseUsername" required>
-                </div>
-                <div class="form-group">
-                    <label for="basePassword">Senha</label>
-                    <input type="password" id="basePassword" required>
+                    <label for="newRole">Tipo de Usuário</label>
+                    <select id="newRole" required>
+                        <option value="user">Usuário Normal</option>
+                        <option value="admin">Administrador</option>
+                    </select>
                 </div>
                 <div class="modal-buttons">
-                    <button type="submit" class="btn-primary">Salvar</button>
-                    <button type="button" class="btn-secondary" onclick="closeModal('addBaseModal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Criar Usuário
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('createUserModal')">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal para adicionar usuário -->
-    <div id="addUserModal" class="modal">
+    <!-- Modal para associar unidade -->
+    <div id="assignUnitModal" class="modal">
         <div class="modal-content">
-            <h2>Adicionar Novo Usuário</h2>
-            <form id="addUserForm">
+            <h2><i class="fas fa-link"></i> Associar Unidade a Usuário</h2>
+            <form id="assignUnitForm">
                 <div class="form-group">
-                    <label for="userName">Nome de Usuário</label>
-                    <input type="text" id="userName" required>
+                    <label for="selectUser">Usuário</label>
+                    <select id="selectUser" required>
+                        <option value="">Carregando usuários...</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="userPassword">Senha</label>
-                    <input type="password" id="userPassword" required>
-                </div>
-                <div class="form-group">
-                    <label for="userBase">Base</label>
-                    <select id="userBase" required>
-                        <!-- Bases serão carregadas aqui -->
+                    <label for="selectUnit">Unidade</label>
+                    <select id="selectUnit" required>
+                        <option value="">Carregando unidades...</option>
                     </select>
                 </div>
                 <div class="modal-buttons">
-                    <button type="submit" class="btn-primary">Salvar</button>
-                    <button type="button" class="btn-secondary" onclick="closeModal('addUserModal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-link"></i> Associar
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('assignUnitModal')">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="js/notifications.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>
