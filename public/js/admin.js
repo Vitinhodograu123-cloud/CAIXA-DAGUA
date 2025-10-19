@@ -754,33 +754,81 @@ async function deleteUser(userId) {
 
 // ========== FUNÇÕES GLOBAIS PARA O HTML ==========
 
-// Funções globais para serem chamadas pelo HTML
+// Funções globais para serem chamadas pelo HTML - CORRIGIDAS
 window.listUsers = function() {
+    console.log('📋 Listar Usuários chamado via HTML');
     loadUsers();
 };
 
 window.listUnits = function() {
+    console.log('🏭 Listar Unidades chamado via HTML');
     loadUnits();
 };
 
 window.createUser = function() {
+    console.log('👤 Criar Usuário chamado via HTML');
     document.getElementById('createUserModal').style.display = 'block';
 };
 
 window.assignUnitToUser = function() {
-    assignUnitToUser();
+    console.log('🔗 Associar Unidade chamado via HTML');
+    // Chama a função principal diretamente
+    const mainAssignFunction = window.assignUnitToUserMain || assignUnitToUser;
+    mainAssignFunction();
 };
 
 window.checkUserStructure = function() {
-    checkUserStructure();
+    console.log('🔍 Verificar Estrutura chamado via HTML');
+    // Chama a função principal diretamente
+    const mainCheckFunction = window.checkUserStructureMain || checkUserStructure;
+    mainCheckFunction();
 };
 
 window.runDatabaseDiagnostic = function() {
-    runDatabaseDiagnostic();
+    console.log('🩺 Diagnóstico chamado via HTML');
+    // Chama a função principal diretamente
+    const mainDiagnosticFunction = window.runDatabaseDiagnosticMain || runDatabaseDiagnostic;
+    mainDiagnosticFunction();
 };
 
 window.clearConsole = function() {
-    clearConsole();
+    console.log('🧹 Limpar Console chamado via HTML');
+    // Chama a função principal diretamente
+    const mainClearFunction = window.clearConsoleMain || clearConsole;
+    mainClearFunction();
+};
+
+// Renomeia as funções principais para evitar conflito
+window.assignUnitToUserMain = assignUnitToUser;
+window.checkUserStructureMain = checkUserStructure; 
+window.runDatabaseDiagnosticMain = runDatabaseDiagnostic;
+window.clearConsoleMain = clearConsole;
+
+// Remove as referências conflitantes
+delete window.assignUnitToUser;
+delete window.checkUserStructure;
+delete window.runDatabaseDiagnostic;
+delete window.clearConsole;
+
+// Restaura as funções globais corretas
+window.assignUnitToUser = function() {
+    console.log('🔗 Associar Unidade chamado via HTML');
+    window.assignUnitToUserMain();
+};
+
+window.checkUserStructure = function() {
+    console.log('🔍 Verificar Estrutura chamado via HTML');
+    window.checkUserStructureMain();
+};
+
+window.runDatabaseDiagnostic = function() {
+    console.log('🩺 Diagnóstico chamado via HTML');
+    window.runDatabaseDiagnosticMain();
+};
+
+window.clearConsole = function() {
+    console.log('🧹 Limpar Console chamado via HTML');
+    window.clearConsoleMain();
 };
 
 console.log('✅ Painel de Administração carregado!');
