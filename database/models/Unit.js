@@ -9,7 +9,7 @@ const UnitSchema = new mongoose.Schema({
   description: String,
   location: {
     type: String,
-    required: true // Nome do condomínio (ex: "THE ONE", "LE VILAGE")
+    required: true
   },
   type: {
     type: String,
@@ -50,7 +50,7 @@ const UnitSchema = new mongoose.Schema({
   numberOfSensors: {
     type: Number,
     required: true,
-    default: 4 // Número padrão de sensores (boias)
+    default: 4
   },
   status: {
     type: String,
@@ -64,6 +64,12 @@ const UnitSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  // NOVO CAMPO: Referência ao usuário que criou a unidade
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   tanks: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Tank'
@@ -73,7 +79,6 @@ const UnitSchema = new mongoose.Schema({
 // Método para gerar o endpoint único
 UnitSchema.pre('save', function(next) {
   if (!this.endpoint) {
-    // Gera um endpoint baseado no nome da unidade (sanitizado)
     const sanitizedName = this.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
     this.endpoint = `/api/units/${sanitizedName}/data`;
   }
