@@ -73,42 +73,36 @@ app.use('/api/users', require('./routes/users'));
 // GET /api/units/list - Listar todas as unidades
 app.get('/api/units/list', async (req, res) => {
     try {
-        console.log('📋 Buscando unidades para dashboard...');
+        console.log('📋 Buscando unidades para usuário...');
         
         // Verificar autenticação
         const token = req.headers.authorization?.replace('Bearer ', '');
-        let userUnits = [];
-        
-        if (token) {
-            try {
-                const jwt = require('jsonwebtoken');
-                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-                
-                // Buscar o usuário para pegar suas unidades
-                const User = require('./database/models/User');
-                const user = await User.findById(decoded.userId);
-                
-                if (user && user.units) {
-                    userUnits = user.units;
-                    console.log(`✅ Usuário ${user.username} tem ${user.units.length} unidades`);
-                }
-            } catch (authError) {
-                console.log('⚠️  Token inválido');
-            }
+        if (!token) {
+            return res.status(401).json({ error: 'Não autenticado' });
         }
 
-        // Se o usuário tem unidades específicas, filtra por elas
-        // Se não tem unidades (array vazio) ou é admin, mostra todas
-        let units;
-        if (userUnits.length > 0) {
-            units = await Unit.find({ _id: { $in: userUnits } });
-            console.log(`🔍 Filtrando ${units.length} unidades do usuário`);
-        } else {
-            units = await Unit.find({});
-            console.log(`🔍 Mostrando TODAS as ${units.length} unidades (usuário sem unidades específicas)`);
+        let userId;
+        try {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            userId = decoded.userId;
+        } catch (authError) {
+            return res.status(401).json({ error: 'Token inválido' });
         }
+
+        // Buscar usuário com suas unidades
+        const User = require('./database/models/User');
+        const user = await User.findById(userId).populate('units');
         
-        res.json(units);
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        console.log(`✅ Usuário ${user.username} tem ${user.units.length} unidades`);
+
+        // Retorna APENAS as unidades do usuário
+        res.json(user.units);
+        
     } catch (error) {
         console.error('❌ Erro ao listar unidades:', error);
         res.status(500).json({ error: 'Erro ao listar unidades' });
@@ -434,6 +428,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
