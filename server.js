@@ -25,7 +25,8 @@ app.use(cors({
     origin: [
         'https://acquatrack.onrender.com',
         'http://localhost:3000',
-        'http://192.168.100.120:3000'
+        'http://192.168.100.120:3000',
+        'null'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -880,6 +881,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
