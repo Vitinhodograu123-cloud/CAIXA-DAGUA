@@ -3,284 +3,722 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administração - Sistema de Monitoramento</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/admin.css">
+    <title>Portal ESP32 - Monitoramento Ngrok</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
+        :root {
+            --bg: #0f1724;
+            --card: #0b1220;
+            --muted: #9aa4b2;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.04);
+            --border-radius: 8px;
         }
-
-        .action-btn {
-            background: var(--gradient-primary);
+        
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            background: linear-gradient(180deg, #071226 0%, #071a2b 60%);
+            color: #e6eef6;
+            min-height: 100vh;
+        }
+        
+        .wrap {
+            max-width: 1200px;
+            margin: 36px auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        p.lead {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        
+        .card {
+            background: var(--card);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-top: 18px;
+            box-shadow: 0 6px 20px rgba(2, 6, 23, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 14px;
+        }
+        
+        th {
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 7px 10px;
+            border-radius: var(--border-radius);
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: rgba(6, 182, 212, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .btn.ghost {
+            color: var(--muted);
+            background: transparent;
+        }
+        
+        .btn.success {
+            color: var(--success);
+        }
+        
+        .btn.warning {
+            color: var(--warning);
+        }
+        
+        .btn.danger {
+            color: var(--danger);
+        }
+        
+        .pill {
+            display: inline-block;
+            padding: 6px 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 13px;
+            color: var(--muted);
+        }
+        
+        .creds {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.12);
+            padding: 6px 8px;
+            border-radius: 6px;
+            color: #cfeefb;
+        }
+        
+        .small {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        
+        .topbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .search {
+            padding: 8px 10px;
+            border-radius: var(--border-radius);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            color: var(--muted);
+            width: 200px;
+        }
+        
+        footer {
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: var(--card);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            margin: 0;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: var(--border-radius);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #e6eef6;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
             color: white;
             border: none;
-            padding: 0.75rem 1rem;
+            padding: 10px 16px;
             border-radius: var(--border-radius);
             cursor: pointer;
             font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            transition: all 0.2s ease;
         }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
+        
+        .btn-primary:hover {
+            background: #0891b2;
+            transform: translateY(-1px);
         }
-
-        .action-btn.secondary {
-            background: var(--gradient-secondary);
-        }
-
-        .action-btn.success {
-            background: var(--gradient-success);
-        }
-
-        .action-btn.warning {
-            background: var(--gradient-warning);
-            color: var(--dark-color);
-        }
-
-        .console-output {
-            background: #1a1a1a;
-            color: #00ff00;
-            padding: 1rem;
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--muted);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 16px;
             border-radius: var(--border-radius);
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            max-height: 400px;
-            overflow-y: auto;
-            margin-top: 1rem;
-            border: 1px solid #333;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
         }
-
-        .console-line {
-            margin-bottom: 0.25rem;
-            line-height: 1.4;
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
         }
-
-        .console-error {
-            color: #ff6b6b;
-        }
-
-        .console-success {
-            color: #51cf66;
-        }
-
-        .console-warning {
-            color: #ffd43b;
-        }
-
-        .console-info {
-            color: #339af0;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .user-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 1rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
+        
+        .empty-state {
             text-align: center;
+            padding: 40px 20px;
+            color: var(--muted);
         }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
         }
-
-        .stat-label {
-            color: var(--gray-dark);
-            font-size: 0.9rem;
+        
+        .status-online {
+            color: var(--success);
+        }
+        
+        .status-offline {
+            color: var(--danger);
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .topbar {
+                width: 100%;
+                margin-top: 12px;
+            }
+            
+            .search {
+                flex: 1;
+            }
+            
+            th:nth-child(4), td:nth-child(4) {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            th:nth-child(3), td:nth-child(3) {
+                display: none;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="admin-dashboard">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>Administração</h2>
+    <div class="wrap">
+        <header>
+            <div>
+                <h1>Portal ESP32 - Monitoramento Ngrok</h1>
+                <p class="lead">Gerencie os links Ngrok dos seus dispositivos ESP32 e suas credenciais de acesso</p>
             </div>
-            <div class="sidebar-menu">
-                <ul>
-                    <li class="menu-item active" data-section="users">
-                        <i class="fas fa-users"></i> Usuários
-                    </li>
-                    <li class="menu-item" data-section="units">
-                        <i class="fas fa-water"></i> Unidades
-                    </li>
-                    <li class="menu-item" data-section="tools">
-                        <i class="fas fa-tools"></i> Ferramentas
-                    </li>
-                </ul>
+            <div class="topbar">
+                <input id="search" class="search" placeholder="Buscar dispositivo..." />
+                <button id="addBtn" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Adicionar
+                </button>
+                <div class="pill">Dispositivos: <strong id="deviceCount">0</strong></div>
             </div>
-            <div class="sidebar-footer">
-                <span id="username"></span>
-                <button id="logoutBtn" class="btn-secondary">Sair</button>
-            </div>
-        </aside>
+        </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <header class="main-header">
-                <h1 id="sectionTitle">Gerenciamento de Usuários</h1>
-                <div class="header-actions">
-                    <button id="addBtn" class="btn-primary">
-                        <i class="fas fa-plus"></i> Adicionar
-                    </button>
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px">
+                <div>
+                    <strong>Dispositivos ESP32 Cadastrados</strong>
+                    <div class="small">Clique em "Abrir" para acessar o dispositivo (abre em nova aba). "Mostrar" revela as credenciais mascaradas.</div>
                 </div>
-            </header>
-
-            <!-- Seção de Usuários -->
-            <div id="usersSection" class="section-content">
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="createUser()">
-                        <i class="fas fa-user-plus"></i> Criar Usuário
-                    </button>
-                    <button class="action-btn secondary" onclick="loadUsers()">
-                        <i class="fas fa-list"></i> Listar Usuários
-                    </button>
-                    <button class="action-btn success" onclick="checkUserStructure()">
-                        <i class="fas fa-search"></i> Verificar Estrutura
-                    </button>
-                </div>
-
-                <div class="user-stats" id="userStats">
-                    <!-- Estatísticas serão carregadas aqui -->
-                </div>
-
-                <div id="usersList" class="grid-list">
-                    <!-- Usuários serão carregados aqui -->
-                </div>
+                <div class="small">Armazenamento local • Dados salvos no navegador</div>
             </div>
 
-            <!-- Seção de Unidades -->
-            <div id="unitsSection" class="section-content" style="display: none;">
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="loadUnits()">
-                        <i class="fas fa-list"></i> Listar Unidades
-                    </button>
-                    <button class="action-btn secondary" onclick="assignUnitToUser()">
-                        <i class="fas fa-link"></i> Associar Unidade
-                    </button>
-                </div>
-
-                <div id="unitsList" class="grid-list">
-                    <!-- Unidades serão carregadas aqui -->
-                </div>
+            <table id="table">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Localização</th>
+                        <th>Link Ngrok</th>
+                        <th>Credenciais</th>
+                        <th style="width:180px">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    <!-- Dispositivos serão carregados aqui -->
+                </tbody>
+            </table>
+            
+            <div id="emptyState" class="empty-state" style="display:none;">
+                <i class="fas fa-microchip"></i>
+                <h3>Nenhum dispositivo cadastrado</h3>
+                <p>Adicione seu primeiro dispositivo ESP32 para começar o monitoramento</p>
+                <button id="addFirstBtn" class="btn-primary" style="margin-top: 16px;">
+                    <i class="fas fa-plus"></i> Adicionar Primeiro Dispositivo
+                </button>
             </div>
+        </div>
 
-            <!-- Seção de Ferramentas -->
-            <div id="toolsSection" class="section-content" style="display: none;">
-                <div class="action-buttons">
-                    <button class="action-btn warning" onclick="runDatabaseDiagnostic()">
-                        <i class="fas fa-stethoscope"></i> Diagnóstico do Banco
-                    </button>
-                    <button class="action-btn" onclick="clearConsole()">
-                        <i class="fas fa-broom"></i> Limpar Console
-                    </button>
-                </div>
-
-                <div class="console-output" id="consoleOutput">
-                    <div class="console-line console-info">🚀 Console de Administração Iniciado</div>
-                    <div class="console-line console-info">💡 Use os botões acima para executar ações</div>
-                </div>
-            </div>
-        </main>
+        <footer>
+            <div>Observações: este portal armazena dados localmente no navegador. Para backup, exporte os dados periodicamente.</div>
+        </footer>
     </div>
 
-    <!-- Modal para criar usuário -->
-    <div id="createUserModal" class="modal">
+    <!-- Modal para adicionar/editar dispositivo -->
+    <div id="deviceModal" class="modal">
         <div class="modal-content">
-            <h2><i class="fas fa-user-plus"></i> Criar Novo Usuário</h2>
-            <form id="createUserForm">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Adicionar Dispositivo ESP32</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="deviceForm">
+                <input type="hidden" id="deviceId">
                 <div class="form-group">
-                    <label for="newUsername">Username</label>
-                    <input type="text" id="newUsername" required placeholder="Digite o username">
+                    <label for="deviceName">Nome do Dispositivo</label>
+                    <input type="text" id="deviceName" class="form-control" required placeholder="Ex: ESP32 - Caixa d'água">
                 </div>
                 <div class="form-group">
-                    <label for="newPassword">Senha</label>
-                    <input type="password" id="newPassword" required placeholder="Digite a senha">
+                    <label for="deviceLocation">Localização</label>
+                    <input type="text" id="deviceLocation" class="form-control" required placeholder="Ex: Setor A, Pátio, Loja Centro">
                 </div>
                 <div class="form-group">
-                    <label for="newRole">Tipo de Usuário</label>
-                    <select id="newRole" required>
-                        <option value="user">Usuário Normal</option>
-                        <option value="admin">Administrador</option>
-                    </select>
+                    <label for="deviceUrl">Link Ngrok</label>
+                    <input type="url" id="deviceUrl" class="form-control" required placeholder="https://seu-link.ngrok-free.dev">
                 </div>
-                <div class="modal-buttons">
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-save"></i> Criar Usuário
-                    </button>
-                    <button type="button" class="btn-secondary" onclick="closeModal('createUserModal')">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
+                <div class="form-group">
+                    <label for="deviceUser">Usuário</label>
+                    <input type="text" id="deviceUser" class="form-control" required placeholder="Nome de usuário para acesso">
+                </div>
+                <div class="form-group">
+                    <label for="devicePass">Senha</label>
+                    <input type="password" id="devicePass" class="form-control" required placeholder="Senha para acesso">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelBtn">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar Dispositivo</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal para associar unidade -->
-    <div id="assignUnitModal" class="modal">
+    <!-- Modal para confirmar exclusão -->
+    <div id="deleteModal" class="modal">
         <div class="modal-content">
-            <h2><i class="fas fa-link"></i> Associar Unidade a Usuário</h2>
-            <form id="assignUnitForm">
-                <div class="form-group">
-                    <label for="selectUser">Usuário</label>
-                    <select id="selectUser" required>
-                        <option value="">Carregando usuários...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="selectUnit">Unidade</label>
-                    <select id="selectUnit" required>
-                        <option value="">Carregando unidades...</option>
-                    </select>
-                </div>
-                <div class="modal-buttons">
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-link"></i> Associar
-                    </button>
-                    <button type="button" class="btn-secondary" onclick="closeModal('assignUnitModal')">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                </div>
-            </form>
+            <div class="modal-header">
+                <h3 class="modal-title">Confirmar Exclusão</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p>Tem certeza que deseja excluir o dispositivo <strong id="deviceToDeleteName"></strong>?</p>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancelDeleteBtn">Cancelar</button>
+                <button type="button" class="btn-primary danger" id="confirmDeleteBtn">Excluir</button>
+            </div>
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="js/admin.js"></script>
+    <script>
+        // Chave para armazenamento local
+        const STORAGE_KEY = 'esp32_devices';
+        // Senha mestre para revelar credenciais
+        const MASTER_SECRET = 'admin123'; // Altere para uma senha mais segura
+
+        // Elementos DOM
+        const tbody = document.getElementById('tbody');
+        const search = document.getElementById('search');
+        const addBtn = document.getElementById('addBtn');
+        const addFirstBtn = document.getElementById('addFirstBtn');
+        const deviceModal = document.getElementById('deviceModal');
+        const deleteModal = document.getElementById('deleteModal');
+        const deviceForm = document.getElementById('deviceForm');
+        const deviceCount = document.getElementById('deviceCount');
+        const emptyState = document.getElementById('emptyState');
+        const modalTitle = document.getElementById('modalTitle');
+        
+        // Variáveis de estado
+        let devices = [];
+        let deviceToDelete = null;
+        let editMode = false;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDevices();
+            setupEventListeners();
+        });
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Botões de adicionar
+            addBtn.addEventListener('click', openAddModal);
+            addFirstBtn.addEventListener('click', openAddModal);
+            
+            // Fechar modais
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', closeModals);
+            });
+            
+            document.getElementById('cancelBtn').addEventListener('click', closeModals);
+            document.getElementById('cancelDeleteBtn').addEventListener('click', closeModals);
+            
+            // Formulário de dispositivo
+            deviceForm.addEventListener('submit', saveDevice);
+            
+            // Confirmação de exclusão
+            document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+            
+            // Busca
+            search.addEventListener('input', filterDevices);
+            
+            // Fechar modal ao clicar fora
+            window.addEventListener('click', function(event) {
+                if (event.target === deviceModal) {
+                    closeModals();
+                }
+                if (event.target === deleteModal) {
+                    closeModals();
+                }
+            });
+        }
+
+        // Carregar dispositivos do localStorage
+        function loadDevices() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                devices = JSON.parse(stored);
+            }
+            renderDevices();
+            updateDeviceCount();
+        }
+
+        // Salvar dispositivos no localStorage
+        function saveDevices() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(devices));
+            renderDevices();
+            updateDeviceCount();
+        }
+
+        // Atualizar contador de dispositivos
+        function updateDeviceCount() {
+            deviceCount.textContent = devices.length;
+            
+            // Mostrar/ocultar estado vazio
+            if (devices.length === 0) {
+                emptyState.style.display = 'block';
+                document.getElementById('table').style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                document.getElementById('table').style.display = 'table';
+            }
+        }
+
+        // Renderizar lista de dispositivos
+        function renderDevices(deviceList = devices) {
+            tbody.innerHTML = '';
+            
+            deviceList.forEach(device => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <strong>${escapeHtml(device.name)}</strong>
+                        <div class="small">ID: ${device.id}</div>
+                    </td>
+                    <td>${escapeHtml(device.location)}</td>
+                    <td>
+                        <a class="small" href="${escapeAttr(device.url)}" target="_blank">
+                            ${device.url}
+                        </a>
+                    </td>
+                    <td>
+                        <div class="creds" id="cred-${device.id}">
+                            ${escapeHtml(device.user)} / ${mask(device.pass)}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn" onclick="openDevice(${device.id})">
+                                <i class="fas fa-external-link-alt"></i> Abrir
+                            </button>
+                            <button class="btn ghost" onclick="revealCredentials(${device.id})">
+                                <i class="fas fa-eye"></i> Mostrar
+                            </button>
+                            <button class="btn warning" onclick="editDevice(${device.id})">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn danger" onclick="deleteDevice(${device.id})">
+                                <i class="fas fa-trash"></i> Excluir
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Filtrar dispositivos na busca
+        function filterDevices() {
+            const query = search.value.trim().toLowerCase();
+            if (!query) {
+                renderDevices();
+                return;
+            }
+            
+            const filtered = devices.filter(device => 
+                device.name.toLowerCase().includes(query) || 
+                device.location.toLowerCase().includes(query) ||
+                device.url.toLowerCase().includes(query) ||
+                device.user.toLowerCase().includes(query)
+            );
+            
+            renderDevices(filtered);
+        }
+
+        // Abrir dispositivo em nova aba
+        function openDevice(id) {
+            const device = devices.find(d => d.id === id);
+            if (device) {
+                window.open(device.url, '_blank');
+            }
+        }
+
+        // Revelar credenciais com senha mestre
+        function revealCredentials(id) {
+            const entered = prompt('Senha mestre para revelar credenciais:');
+            if (entered === null) return; // Usuário cancelou
+            
+            if (entered === MASTER_SECRET) {
+                const device = devices.find(d => d.id === id);
+                if (device) {
+                    document.getElementById(`cred-${id}`).textContent = 
+                        `${device.user} / ${device.pass}`;
+                }
+            } else {
+                alert('Senha incorreta.');
+            }
+        }
+
+        // Abrir modal para adicionar dispositivo
+        function openAddModal() {
+            editMode = false;
+            modalTitle.textContent = 'Adicionar Dispositivo ESP32';
+            deviceForm.reset();
+            document.getElementById('deviceId').value = '';
+            deviceModal.style.display = 'flex';
+        }
+
+        // Abrir modal para editar dispositivo
+        function editDevice(id) {
+            const device = devices.find(d => d.id === id);
+            if (device) {
+                editMode = true;
+                modalTitle.textContent = 'Editar Dispositivo ESP32';
+                document.getElementById('deviceId').value = device.id;
+                document.getElementById('deviceName').value = device.name;
+                document.getElementById('deviceLocation').value = device.location;
+                document.getElementById('deviceUrl').value = device.url;
+                document.getElementById('deviceUser').value = device.user;
+                document.getElementById('devicePass').value = device.pass;
+                deviceModal.style.display = 'flex';
+            }
+        }
+
+        // Salvar dispositivo (adicionar ou editar)
+        function saveDevice(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('deviceId').value;
+            const name = document.getElementById('deviceName').value.trim();
+            const location = document.getElementById('deviceLocation').value.trim();
+            const url = document.getElementById('deviceUrl').value.trim();
+            const user = document.getElementById('deviceUser').value.trim();
+            const pass = document.getElementById('devicePass').value;
+            
+            if (!name || !location || !url || !user || !pass) {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
+            
+            if (editMode) {
+                // Editar dispositivo existente
+                const index = devices.findIndex(d => d.id == id);
+                if (index !== -1) {
+                    devices[index] = { 
+                        id: parseInt(id), 
+                        name, 
+                        location, 
+                        url, 
+                        user, 
+                        pass 
+                    };
+                }
+            } else {
+                // Adicionar novo dispositivo
+                const newId = devices.length > 0 ? Math.max(...devices.map(d => d.id)) + 1 : 1;
+                devices.push({ 
+                    id: newId, 
+                    name, 
+                    location, 
+                    url, 
+                    user, 
+                    pass 
+                });
+            }
+            
+            saveDevices();
+            closeModals();
+        }
+
+        // Preparar exclusão de dispositivo
+        function deleteDevice(id) {
+            const device = devices.find(d => d.id === id);
+            if (device) {
+                deviceToDelete = device;
+                document.getElementById('deviceToDeleteName').textContent = device.name;
+                deleteModal.style.display = 'flex';
+            }
+        }
+
+        // Confirmar exclusão de dispositivo
+        function confirmDelete() {
+            if (deviceToDelete) {
+                devices = devices.filter(d => d.id !== deviceToDelete.id);
+                saveDevices();
+                closeModals();
+                deviceToDelete = null;
+            }
+        }
+
+        // Fechar todos os modais
+        function closeModals() {
+            deviceModal.style.display = 'none';
+            deleteModal.style.display = 'none';
+        }
+
+        // Mascarar senha
+        function mask(s) {
+            return '*'.repeat(Math.max(6, String(s).length));
+        }
+
+        // Helpers de segurança para inserção no DOM
+        function escapeHtml(s) { 
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); 
+        }
+        
+        function escapeAttr(s) { 
+            return String(s).replace(/"/g, '%22'); 
+        }
+    </script>
 </body>
 </html>
