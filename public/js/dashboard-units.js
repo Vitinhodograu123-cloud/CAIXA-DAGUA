@@ -6,31 +6,38 @@ function getAuthToken() {
 
 // Função para fazer requisições autenticadas
 async function fetchWithAuth(url, options = {}) {
-    const token = getAuthToken();
+    const token = localStorage.getItem('token');
     
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers
+    const config = {
+        ...options,
+        headers: {
+            ...options.headers,
+            'Content-Type': 'application/json',
+        }
     };
     
+    // Adiciona token apenas se existir
     if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        config.headers.Authorization = `Bearer ${token}`;
     }
     
-    const response = await fetch(url, {
-        ...options,
-        headers
-    });
-    
-    if (response.status === 401) {
-        // Token inválido, redirecionar para login
-        window.location.href = '/';
-        return;
+    try {
+        const response = await fetch(url, config);
+        
+        // Se der 401, remove o token inválido
+        if (response.status === 401) {
+            console.log('⚠️  Token inválido, removendo...');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Não redireciona imediatamente, tenta continuar
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('❌ Erro na requisição:', error);
+        throw error;
     }
-    
-    return response;
 }
-
 // Função para criar modal de adicionar unidade
 function createAddUnitModal() {
     const modal = document.createElement('div');
@@ -375,3 +382,4 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUnitsList();
 
 });
+
