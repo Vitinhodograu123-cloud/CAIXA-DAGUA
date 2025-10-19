@@ -65,6 +65,34 @@ function setupEventListeners() {
     });
 }
 
+// No início do fetchUsers(), adicione:
+async function fetchUsers() {
+    console.log('🔍 DEBUG: Iniciando fetchUsers...');
+    try {
+        const token = localStorage.getItem('token');
+        console.log('🔍 DEBUG: Token:', token ? 'Presente' : 'Ausente');
+        
+        const response = await fetch('/api/admin/users', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        console.log('🔍 DEBUG: Status da resposta:', response.status);
+        console.log('🔍 DEBUG: URL da requisição:', '/api/admin/users');
+        
+        if (response.ok) {
+            const users = await response.json();
+            console.log('🔍 DEBUG: Usuários recebidos:', users);
+            return users;
+        } else {
+            console.log('🔍 DEBUG: Erro na resposta:', response.status, response.statusText);
+            // Fallback...
+        }
+    } catch (error) {
+        console.log('🔍 DEBUG: Erro no fetchUsers:', error);
+    }
+    return [];
+}
+
 // Trocar seção
 function switchSection(section) {
     currentSection = section;
@@ -809,3 +837,4 @@ window.originalRunDatabaseDiagnostic = runDatabaseDiagnostic;
 window.originalClearConsole = clearConsole;
 
 console.log('✅ Painel de Administração carregado!');
+
