@@ -101,18 +101,26 @@ function createAddUnitModal() {
     };
     
     const form = modal.querySelector('#addUnitForm');
+    // No formulário de adicionar unidade, atualize a função de submit:
     form.onsubmit = async (e) => {
         e.preventDefault();
         
         const formData = {
             name: document.getElementById('unitName').value,
             type: document.getElementById('unitType').value,
-            location: document.getElementById('unitLocation').value
+            location: document.getElementById('unitLocation').value,
+            numberOfSensors: parseInt(document.getElementById('unitSensors').value) || 4,
+            description: document.getElementById('unitDescription').value
         };
-        
+    
         try {
-            const response = await fetchWithAuth('/api/units/create', {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/units/create', {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // ENVIA O TOKEN
+                },
                 body: JSON.stringify(formData)
             });
                         
@@ -137,6 +145,7 @@ function createAddUnitModal() {
             alert('Erro ao criar unidade');
         }
     };
+
 }
 
 // Verificar se o token é válido
@@ -390,5 +399,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUnitsList();
 
 });
+
 
 
