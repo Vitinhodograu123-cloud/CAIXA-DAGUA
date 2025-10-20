@@ -4,6 +4,76 @@ const socket = io();
 // Variáveis globais
 let currentUnit = null;
 
+// ⭐⭐ FUNÇÃO PARA GERAR TABELA DE CALIBRAÇÃO DINÂMICA ⭐⭐
+function generateCalibrationTable() {
+    const sensorCount = parseInt(document.getElementById('unitSensors').value) || 4;
+    const calibrationSection = document.getElementById('calibrationSection');
+    const calibrationTable = document.getElementById('calibrationTable');
+    
+    if (sensorCount < 1) return;
+    
+    // Mostra a seção de calibração
+    calibrationSection.style.display = 'block';
+    
+    // Gera as linhas da tabela
+    let tableHTML = `
+        <table class="calibration-input-table">
+            <thead>
+                <tr>
+                    <th>% Nível</th>
+                    <th>Sensores Ativos</th>
+                    <th>Litros</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    for (let i = 1; i <= sensorCount; i++) {
+        const percentage = Math.round((i / sensorCount) * 100);
+        tableHTML += `
+            <tr>
+                <td><strong>${percentage}%</strong></td>
+                <td>${i}/${sensorCount}</td>
+                <td>
+                    <input type="number" 
+                           id="calibration_${percentage}" 
+                           class="calibration-input" 
+                           placeholder="Litros em ${percentage}%"
+                           min="0"
+                           value="${i * 250}">
+                </td>
+            </tr>
+        `;
+    }
+    
+    tableHTML += `
+            </tbody>
+        </table>
+    `;
+    
+    calibrationTable.innerHTML = tableHTML;
+}
+
+// ⭐⭐ FUNÇÃO PARA OBTER OS DADOS DE CALIBRAÇÃO DO FORMULÁRIO ⭐⭐
+function getCalibrationData() {
+    const sensorCount = parseInt(document.getElementById('unitSensors').value) || 4;
+    const calibration = [];
+    
+    for (let i = 1; i <= sensorCount; i++) {
+        const percentage = Math.round((i / sensorCount) * 100);
+        const litersInput = document.getElementById(`calibration_${percentage}`);
+        const liters = litersInput ? parseInt(litersInput.value) || (i * 250) : (i * 250);
+        
+        calibration.push({
+            percentage: percentage,
+            liters: liters,
+            sensorCount: i
+        });
+    }
+    
+    return calibration;
+}
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Dashboard inicializando...');
@@ -426,6 +496,7 @@ function displayUnitData(data, unit) {
 }
 
 // Adicionar nova unidade
+// Adicionar nova unidade - ⭐⭐ ATUALIZADA ⭐⭐
 async function handleAddUnit(e) {
     e.preventDefault();
     
@@ -436,12 +507,21 @@ async function handleAddUnit(e) {
         location: document.getElementById('unitLocation').value.trim(),
         type: document.getElementById('unitType').value,
         numberOfSensors: parseInt(document.getElementById('unitSensors').value) || 4,
-        description: document.getElementById('unitDescription').value.trim()
+        description: document.getElementById('unitDescription').value.trim(),
+        // ⭐⭐ NOVO: Inclui os dados de calibração ⭐⭐
+        calibration: getCalibrationData()
     };
 
     // Validação básica
     if (!formData.name || !formData.location || !formData.type) {
         alert('❌ Por favor, preencha todos os campos obrigatórios.');
+        return;
+    }
+
+    // ⭐⭐ VALIDAÇÃO DA CALIBRAÇÃO ⭐⭐
+    const calibrationValid = formData.calibration.every(item => item.liters > 0);
+    if (!calibrationValid) {
+        alert('❌ Por favor, preencha todos os valores de litros na tabela de calibração.');
         return;
     }
 
@@ -490,6 +570,9 @@ function closeModal() {
     const form = document.getElementById('addUnitForm');
     if (form) {
         form.reset();
+        // ⭐⭐ RESETA A TABELA DE CALIBRAÇÃO ⭐⭐
+        document.getElementById('calibrationSection').style.display = 'none';
+        document.getElementById('calibrationTable').innerHTML = '';
     }
 }
 
@@ -608,5 +691,6 @@ styleElement.textContent = additionalStyles;
 document.head.appendChild(styleElement);
 
 console.log('✅ Dashboard carregado e pronto!');
+
 
 
