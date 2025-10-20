@@ -1,15 +1,15 @@
 /* Reset e variáveis com nova paleta de cores */
 :root {
-    --color1: #67be9b;
-    --color2: #95d0b8;
-    --color3: #fcfcd7;
-    --color4: #f1db42;
-    --color5: #f04158;
+    --color1: #2F7C6D;   /* Verde-petróleo escuro, dá sofisticação à sidebar */
+    --color2: #49C2A8;   /* Verde-água vívido, para botões e status online */
+    --color3: #F9F9F4;   /* Branco levemente amarelado, base do conteúdo */
+    --color4: #FFD166;   /* Amarelo suave e quente, para destaques */
+    --color5: #EF476F;   /* Rosa-avermelhado moderno, para alertas e erros */
     --sidebar-width: 280px;
-    --border-radius: 12px;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --transition: all 0.3s ease;
+    --border-radius: 14px;
+    --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.15);
+    --transition: all 0.25s ease-in-out;
 }
 
 * {
@@ -686,3 +686,4 @@ body {
     backdrop-filter: blur(5px);
     z-index: 999;
 }
+
