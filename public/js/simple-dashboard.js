@@ -603,12 +603,15 @@ socket.on('connect', () => {
     console.log('✅ Conectado ao servidor via Socket.IO');
 });
 
+// Socket.IO event listeners - ⭐⭐ CORRIGIDA ⭐⭐
 socket.on('unitUpdate', (data) => {
     console.log('🔄 Atualização em tempo real recebida:', data);
     
     if (currentUnit && data.unitId === currentUnit._id.toString()) {
         console.log('🔄 Atualizando dados da unidade atual...');
-        displayUnitData(data.data);
+        console.log('📊 Unidade com calibração:', currentUnit.calibration); // Debug
+        // ⭐⭐ CORREÇÃO: Passe currentUnit como segundo parâmetro ⭐⭐
+        displayUnitData(data.data, currentUnit);
         
         // Atualiza o status online/offline na lista
         updateUnitStatus(data.unitId, true);
@@ -756,6 +759,7 @@ styleElement.textContent = calibrationStyles;
 document.head.appendChild(styleElement);
 
 console.log('✅ Dashboard carregado e pronto!');
+
 
 
 
