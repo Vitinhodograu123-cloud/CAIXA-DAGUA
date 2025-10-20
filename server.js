@@ -158,6 +158,7 @@ app.post('/api/units/create', async (req, res) => {
         }
 
         // Cria uma nova unidade
+        // ⭐⭐ ATUALIZE A CRIAÇÃO DA UNIDADE - Adicione calibration ⭐⭐
         const unit = new Unit({
             name,
             type,
@@ -165,8 +166,24 @@ app.post('/api/units/create', async (req, res) => {
             numberOfSensors: numberOfSensors || 4,
             description: description || `${type} em ${location}`,
             apiKey: require('crypto').randomBytes(32).toString('hex'),
-            createdBy: userId // ADICIONA REFERÊNCIA AO USUÁRIO CRIADOR
+            createdBy: userId,
+            // ⭐⭐ NOVA LINHA - Gera calibração automática ⭐⭐
+            calibration: generateDefaultCalibration(numberOfSensors || 4)
         });
+
+        // ⭐⭐ FUNÇÃO AUXILIAR - Adicione esta função no mesmo arquivo ⭐⭐
+        function generateDefaultCalibration(sensorCount) {
+            const calibration = [];
+            for (let i = 1; i <= sensorCount; i++) {
+                const percentage = Math.round((i / sensorCount) * 100);
+                calibration.push({
+                    percentage: percentage,
+                    liters: i * 250, // 250L por sensor
+                    sensorCount: i
+                });
+            }
+            return calibration;
+        }
 
         await unit.save();
 
@@ -881,6 +898,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
