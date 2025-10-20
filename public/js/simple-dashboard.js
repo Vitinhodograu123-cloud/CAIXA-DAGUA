@@ -524,31 +524,6 @@ function displayUnitData(data, unit) {
             <div class="update-time">
                 ⏰ Última atualização: ${timestamp}
             </div>
-            
-            <!-- ⭐⭐ TABELA DE CALIBRAÇÃO ⭐⭐ -->
-            ${unit && unit.calibration ? `
-            <div class="calibration-section">
-                <h4>📊 Tabela de Calibração (${unit.numberOfSensors} sensores)</h4>
-                <table class="calibration-table">
-                    <thead>
-                        <tr>
-                            <th>%</th>
-                            <th>Litros</th>
-                            <th>Sensores Ativos</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${unit.calibration.map(item => `
-                            <tr ${item.percentage === waterLevel ? 'style="background: #e8f5e8;"' : ''}>
-                                <td>${item.percentage}%</td>
-                                <td>${item.liters}L</td>
-                                <td>${item.sensorCount}/${unit.numberOfSensors}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-            ` : ''}
         </div>
     `;
 }
@@ -795,6 +770,7 @@ styleElement.textContent = calibrationStyles;
 document.head.appendChild(styleElement);
 
 console.log('✅ Dashboard carregado e pronto!');
+
 
 
 
