@@ -362,6 +362,7 @@ function updateUnitTitle(unit) {
 }
 
 // Carregar dados da unidade
+// Carregar dados da unidade - ⭐⭐ CORRIGIDA ⭐⭐
 async function loadUnitData(unitId) {
     try {
         console.log(`📊 Carregando dados da unidade: ${unitId}`);
@@ -385,8 +386,10 @@ async function loadUnitData(unitId) {
         
         const data = await response.json();
         console.log('✅ Dados carregados:', data);
+        console.log('📊 Unidade atual:', currentUnit); // Debug
         
-        displayUnitData(data);
+        // ⭐⭐ CORREÇÃO: Passe currentUnit como segundo parâmetro ⭐⭐
+        displayUnitData(data, currentUnit);
         
     } catch (error) {
         console.error('❌ Erro ao carregar dados:', error);
@@ -395,7 +398,7 @@ async function loadUnitData(unitId) {
             temperature: 0, 
             isVibrating: false,
             error: true 
-        });
+        }, currentUnit);
     }
 }
 
@@ -700,6 +703,7 @@ styleElement.textContent = calibrationStyles;
 document.head.appendChild(styleElement);
 
 console.log('✅ Dashboard carregado e pronto!');
+
 
 
 
