@@ -55,53 +55,60 @@
 
     <!-- Modal para adicionar unidade -->
     <div id="addUnitModal" class="modal">
-        <div class="modal-content">
-            <h2>Adicionar Nova Unidade</h2>
-            <form id="addUnitForm">
-                <div class="form-group">
-                    <label for="unitName">Nome da Unidade</label>
-                    <input type="text" id="unitName" required placeholder="Ex: THE ONE CAIXAS">
-                </div>
-                <div class="form-group">
-                    <label for="unitLocation">Localização (Condomínio)</label>
-                    <input type="text" id="unitLocation" required placeholder="Ex: THE ONE">
-                </div>
-                <div class="form-group">
-                    <label for="unitType">Tipo</label>
-                    <select id="unitType" required>
-                        <option value="">Selecione o tipo</option>
-                        <option value="CAIXA">Caixa d'água</option>
-                        <option value="CISTERNA">Cisterna</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="unitSensors">Número de Sensores (Boias)</label>
-                    <input type="number" id="unitSensors" required min="1" max="10" value="4" onchange="generateCalibrationTable()">
-                    <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
-                        ⚡ Digite a quantidade de sensores e preencha os litros para cada nível
-                    </small>
-                </div>
-                <div class="form-group">
-                    <label for="unitDescription">Descrição</label>
-                    <textarea id="unitDescription" placeholder="Descrição opcional"></textarea>
-                </div>
-                  <!-- ⭐⭐ NOVA TABELA DINÂMICA DE CALIBRAÇÃO ⭐⭐ -->
-                <div id="calibrationSection" style="display: none;">
+        <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 10; padding: 20px; border-bottom: 1px solid #eee;">
+                <h2 style="margin: 0;">Adicionar Nova Unidade</h2>
+                <span class="close" style="position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <form id="addUnitForm">
                     <div class="form-group">
-                        <label>📊 Configuração de Calibração</label>
-                        <div id="calibrationTable" class="calibration-table-container">
-                            <!-- Tabela será gerada dinamicamente aqui -->
-                        </div>
-                        <small style="color: #666; font-size: 12px;">
-                            💡 Preencha a quantidade de litros para cada nível de porcentagem
+                        <label for="unitName">Nome da Unidade</label>
+                        <input type="text" id="unitName" required placeholder="Ex: THE ONE CAIXAS">
+                    </div>
+                    <div class="form-group">
+                        <label for="unitLocation">Localização (Condomínio)</label>
+                        <input type="text" id="unitLocation" required placeholder="Ex: THE ONE">
+                    </div>
+                    <div class="form-group">
+                        <label for="unitType">Tipo</label>
+                        <select id="unitType" required>
+                            <option value="">Selecione o tipo</option>
+                            <option value="CAIXA">Caixa d'água</option>
+                            <option value="CISTERNA">Cisterna</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="unitSensors">Número de Sensores (Boias)</label>
+                        <input type="number" id="unitSensors" required min="1" max="20" value="4" onchange="generateCalibrationTable()">
+                        <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                            ⚡ Digite a quantidade de sensores e preencha os litros para cada nível
                         </small>
                     </div>
-                </div>
-                <div class="modal-buttons">
-                    <button type="submit" class="btn-primary">Salvar</button>
-                    <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
-                </div>
-            </form>
+    
+                    <!-- ⭐⭐ NOVA TABELA DINÂMICA DE CALIBRAÇÃO COM SCROLL ⭐⭐ -->
+                    <div id="calibrationSection" style="display: none;">
+                        <div class="form-group">
+                            <label style="font-weight: bold; color: #333;">📊 Configuração de Calibração</label>
+                            <div id="calibrationTable" class="calibration-table-container" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
+                                <!-- Tabela será gerada dinamicamente aqui -->
+                            </div>
+                            <small style="color: #666; font-size: 12px;">
+                                💡 Preencha a quantidade de litros para cada nível de porcentagem
+                            </small>
+                        </div>
+                    </div>
+    
+                    <div class="form-group">
+                        <label for="unitDescription">Descrição</label>
+                        <textarea id="unitDescription" placeholder="Descrição opcional" style="resize: vertical; min-height: 60px;"></textarea>
+                    </div>
+                    <div class="modal-buttons" style="position: sticky; bottom: 0; background: white; padding: 15px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                        <button type="submit" class="btn-primary">Salvar</button>
+                        <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -144,6 +151,7 @@
 </body>
 
 </html>
+
 
 
 
