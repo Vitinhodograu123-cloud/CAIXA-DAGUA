@@ -123,9 +123,10 @@ app.get('/api/units/all', async (req, res) => {
 });
 
 // POST /api/units/create - Criar nova unidade
+// POST /api/units/create - ⭐⭐ ATUALIZADA ⭐⭐
 app.post('/api/units/create', async (req, res) => {
     try {
-        const { name, type, location, numberOfSensors, description } = req.body;
+        const { name, type, location, numberOfSensors, description, calibration } = req.body;
         
         console.log('🎯 Criando nova unidade para usuário...');
 
@@ -157,33 +158,33 @@ app.post('/api/units/create', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Já existe uma unidade com este nome' });
         }
 
-        // Cria uma nova unidade
-        // ⭐⭐ ATUALIZE A CRIAÇÃO DA UNIDADE - Adicione calibration ⭐⭐
-        const unit = new Unit({
-            name,
-            type,
-            location,
-            numberOfSensors: numberOfSensors || 4,
-            description: description || `${type} em ${location}`,
-            apiKey: require('crypto').randomBytes(32).toString('hex'),
-            createdBy: userId,
-            // ⭐⭐ NOVA LINHA - Gera calibração automática ⭐⭐
-            calibration: generateDefaultCalibration(numberOfSensors || 4)
-        });
-
-        // ⭐⭐ FUNÇÃO AUXILIAR - Adicione esta função no mesmo arquivo ⭐⭐
+        // ⭐⭐ FUNÇÃO AUXILIAR (mantém como fallback) ⭐⭐
         function generateDefaultCalibration(sensorCount) {
             const calibration = [];
             for (let i = 1; i <= sensorCount; i++) {
                 const percentage = Math.round((i / sensorCount) * 100);
                 calibration.push({
                     percentage: percentage,
-                    liters: i * 250, // 250L por sensor
+                    liters: i * 250,
                     sensorCount: i
                 });
             }
             return calibration;
         }
+
+        // Cria uma nova unidade
+        // ⭐⭐ ATUALIZE A CRIAÇÃO DA UNIDADE - Usa a calibração enviada ⭐⭐
+        const unit = new Unit({
+            name,
+            type,
+            location,
+            numberOfSensors: parseInt(numberOfSensors) || 4,
+            description: description || `${type} em ${location}`,
+            apiKey: require('crypto').randomBytes(32).toString('hex'),
+            createdBy: userId,
+            // ⭐⭐ USA A CALIBRAÇÃO ENVIADA PELO FORMULÁRIO OU GERA UMA PADRÃO ⭐⭐
+            calibration: calibration || generateDefaultCalibration(parseInt(numberOfSensors) || 4)
+        });
 
         await unit.save();
 
@@ -194,6 +195,7 @@ app.post('/api/units/create', async (req, res) => {
         );
 
         console.log(`✅ Nova unidade criada por ${user.username}: ${unit.name}`);
+        console.log(`📊 Calibração configurada:`, unit.calibration);
 
         // Emitir evento via Socket.io
         io.emit('newUnit', { unitId: unit._id });
@@ -206,7 +208,8 @@ app.post('/api/units/create', async (req, res) => {
                 type: unit.type,
                 location: unit.location,
                 apiEndpoint: '/api/units/data',
-                apiToken: unit.apiKey
+                apiToken: unit.apiKey,
+                calibration: unit.calibration // ⭐⭐ INCLUI A CALIBRAÇÃO NA RESPOSTA ⭐⭐
             }
         });
     } catch (error) {
@@ -898,6 +901,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
