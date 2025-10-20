@@ -15,14 +15,14 @@ function generateCalibrationTable() {
     // Mostra a seção de calibração
     calibrationSection.style.display = 'block';
     
-    // Gera as linhas da tabela
+    // Gera as linhas da tabela COMPACTA
     let tableHTML = `
-        <table class="calibration-input-table">
+        <table class="calibration-input-table" style="width: 100%; font-size: 13px;">
             <thead>
                 <tr>
-                    <th>% Nível</th>
-                    <th>Sensores Ativos</th>
-                    <th>Litros</th>
+                    <th style="padding: 8px; width: 25%;">% Nível</th>
+                    <th style="padding: 8px; width: 35%;">Sensores</th>
+                    <th style="padding: 8px; width: 40%;">Litros</th>
                 </tr>
             </thead>
             <tbody>
@@ -32,15 +32,16 @@ function generateCalibrationTable() {
         const percentage = Math.round((i / sensorCount) * 100);
         tableHTML += `
             <tr>
-                <td><strong>${percentage}%</strong></td>
-                <td>${i}/${sensorCount}</td>
-                <td>
+                <td style="padding: 6px;"><strong>${percentage}%</strong></td>
+                <td style="padding: 6px;">${i}/${sensorCount}</td>
+                <td style="padding: 6px;">
                     <input type="number" 
                            id="calibration_${percentage}" 
                            class="calibration-input" 
-                           placeholder="Litros em ${percentage}%"
+                           placeholder="${i * 250}L"
                            min="0"
-                           value="${i * 250}">
+                           value="${i * 250}"
+                           style="width: 100%; padding: 4px; font-size: 12px;">
                 </td>
             </tr>
         `;
@@ -52,7 +53,13 @@ function generateCalibrationTable() {
     `;
     
     calibrationTable.innerHTML = tableHTML;
+    
+    // ⭐⭐ SCROLL AUTOMÁTICO PARA A TABELA SE FOR MUITOS SENSORES ⭐⭐
+    if (sensorCount > 6) {
+        calibrationTable.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 }
+
 
 // ⭐⭐ FUNÇÃO PARA OBTER OS DADOS DE CALIBRAÇÃO DO FORMULÁRIO ⭐⭐
 function getCalibrationData() {
@@ -189,7 +196,7 @@ function isTokenValid() {
     }
 }
 
-// Setup de event listeners
+// Setup de event listeners - ⭐⭐ ATUALIZADA ⭐⭐
 function setupEventListeners() {
     console.log('🔧 Configurando event listeners...');
     
@@ -203,12 +210,20 @@ function setupEventListeners() {
     // Modal de adicionar unidade
     const addUnitBtn = document.getElementById('addUnitBtn');
     const addUnitModal = document.getElementById('addUnitModal');
+    const closeBtn = addUnitModal.querySelector('.close');
 
     if (addUnitBtn) {
         addUnitBtn.addEventListener('click', () => {
             console.log('🎯 Abrindo modal de adicionar unidade...');
             addUnitModal.style.display = 'block';
+            // ⭐⭐ GERA TABELA AO ABRIR MODAL ⭐⭐
+            setTimeout(() => generateCalibrationTable(), 100);
         });
+    }
+
+    // ⭐⭐ FECHAR MODAL COM BOTÃO X ⭐⭐
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
     }
 
     // Form de adicionar unidade
@@ -654,46 +669,84 @@ window.addEventListener('resize', () => {
     }
 });
 
-// ⭐⭐ ESTILOS PARA A TABELA DE CALIBRAÇÃO ⭐⭐
+// ⭐⭐ ESTILOS ATUALIZADOS PARA MODAL RESPONSIVO ⭐⭐
 const calibrationStyles = `
-.calibration-table-container {
-    margin-top: 10px;
-    border: 1px solid #ddd;
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    overflow: auto;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 2% auto;
     border-radius: 8px;
-    padding: 15px;
-    background: #f9f9f9;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.calibration-table-container {
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-top: 8px;
 }
 
 .calibration-input-table {
-    width: 100%;
     border-collapse: collapse;
 }
 
 .calibration-input-table th {
     background-color: #e9ecef;
-    padding: 10px;
-    text-align: left;
-    border-bottom: 2px solid #dee2e6;
-    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 
-.calibration-input-table td {
-    padding: 10px;
-    border-bottom: 1px solid #dee2e6;
+.calibration-input-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.calibration-input-table tr:hover {
+    background-color: #e3f2fd;
 }
 
 .calibration-input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 14px;
+    transition: all 0.2s ease;
 }
 
 .calibration-input:focus {
     border-color: #007bff;
-    outline: none;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    transform: scale(1.02);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 5% auto;
+        width: 95%;
+        max-height: 85vh;
+    }
+    
+    .calibration-input-table {
+        font-size: 12px;
+    }
+    
+    .calibration-input {
+        font-size: 11px;
+        padding: 3px;
+    }
 }
 `;
 
@@ -703,6 +756,7 @@ styleElement.textContent = calibrationStyles;
 document.head.appendChild(styleElement);
 
 console.log('✅ Dashboard carregado e pronto!');
+
 
 
 
