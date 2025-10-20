@@ -75,12 +75,16 @@ function getCalibrationData() {
 }
 
 // Inicialização
+// Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Dashboard inicializando...');
     checkAuth();
-    setupMobileMenu(); // ← ADICIONADO
+    setupMobileMenu();
     setupEventListeners();
     loadUnits();
+    
+    // ⭐⭐ INICIALIZA A TABELA DE CALIBRAÇÃO ⭐⭐
+    generateCalibrationTable();
 });
 
 // Configuração do menu mobile
@@ -647,50 +651,56 @@ window.addEventListener('resize', () => {
     }
 });
 
-const additionalStyles = `
-.calibration-section {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f8f9fa;
+// ⭐⭐ ESTILOS PARA A TABELA DE CALIBRAÇÃO ⭐⭐
+const calibrationStyles = `
+.calibration-table-container {
+    margin-top: 10px;
+    border: 1px solid #ddd;
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    padding: 15px;
+    background: #f9f9f9;
 }
 
-.calibration-section h4 {
-    margin: 0 0 10px 0;
-    color: #495057;
-    font-size: 14px;
-}
-
-.calibration-table {
+.calibration-input-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
 }
 
-.calibration-table th,
-.calibration-table td {
-    padding: 8px;
-    text-align: center;
-    border: 1px solid #dee2e6;
-}
-
-.calibration-table th {
+.calibration-input-table th {
     background-color: #e9ecef;
+    padding: 10px;
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
     font-weight: 600;
 }
 
-.calibration-table tr:nth-child(even) {
-    background-color: #f8f9fa;
+.calibration-input-table td {
+    padding: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.calibration-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.calibration-input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 `;
 
 // Adicione os estilos ao documento
 const styleElement = document.createElement('style');
-styleElement.textContent = additionalStyles;
+styleElement.textContent = calibrationStyles;
 document.head.appendChild(styleElement);
 
 console.log('✅ Dashboard carregado e pronto!');
+
 
 
 
