@@ -564,5 +564,49 @@ window.addEventListener('resize', () => {
     }
 });
 
+const additionalStyles = `
+.calibration-section {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.calibration-section h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+    font-size: 14px;
+}
+
+.calibration-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.calibration-table th,
+.calibration-table td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.calibration-table th {
+    background-color: #e9ecef;
+    font-weight: 600;
+}
+
+.calibration-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+`;
+
+// Adicione os estilos ao documento
+const styleElement = document.createElement('style');
+styleElement.textContent = additionalStyles;
+document.head.appendChild(styleElement);
+
 console.log('✅ Dashboard carregado e pronto!');
+
 
