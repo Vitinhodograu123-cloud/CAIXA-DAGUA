@@ -326,7 +326,7 @@ async function loadUnitData(unitId) {
 }
 
 // Exibir dados da unidade
-function displayUnitData(data) {
+function displayUnitData(data, unit) {
     const tanksGrid = document.getElementById('tanksGrid');
     
     if (data.error) {
@@ -338,18 +338,50 @@ function displayUnitData(data) {
         return;
     }
 
-    // Formata os dados para exibição
+    // ⭐⭐ NOVA LÓGICA - Formata o nível com litros ⭐⭐
     const waterLevel = data.waterLevel || 0;
     const temperature = data.temperature || 0;
     const vibrationCount = data.vibrationCount || 0;
     const isVibrating = data.isVibrating || false;
     const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString('pt-BR') : 'Nunca';
 
+    // ⭐⭐ CALCULA LITROS - Use a calibração da unidade ⭐⭐
+    let waterLevelDisplay = `${waterLevel}%`;
+    if (unit && unit.calibration) {
+        const liters = calculateLiters(waterLevel, unit.calibration);
+        if (liters !== null) {
+            waterLevelDisplay = `${waterLevel}% (${liters}L)`;
+        }
+    }
+
+    // ⭐⭐ FUNÇÃO AUXILIAR - Adicione esta função ⭐⭐
+    function calculateLiters(percentage, calibration) {
+        if (!calibration || calibration.length === 0) return null;
+        
+        const sortedCalibration = [...calibration].sort((a, b) => a.percentage - b.percentage);
+        
+        for (let i = 0; i < sortedCalibration.length; i++) {
+            const current = sortedCalibration[i];
+            const next = sortedCalibration[i + 1];
+            
+            if (percentage === current.percentage) {
+                return current.liters;
+            }
+            
+            if (next && percentage > current.percentage && percentage <= next.percentage) {
+                const ratio = (percentage - current.percentage) / (next.percentage - current.percentage);
+                return Math.round(current.liters + (next.liters - current.liters) * ratio);
+            }
+        }
+        
+        return null;
+    }
+
     tanksGrid.innerHTML = `
         <div class="data-display">
             <div class="data-item ${data.isLowLevel ? 'warning' : ''}">
                 <span class="data-label">💧 Nível de Água:</span>
-                <span class="data-value">${waterLevel}%</span>
+                <span class="data-value">${waterLevelDisplay}</span>
                 ${data.isLowLevel ? '<span class="alert-badge">⚠️ Baixo</span>' : ''}
             </div>
             <div class="data-item ${data.isHighTemp ? 'warning' : ''}">
@@ -364,6 +396,31 @@ function displayUnitData(data) {
             <div class="update-time">
                 ⏰ Última atualização: ${timestamp}
             </div>
+            
+            <!-- ⭐⭐ NOVA SEÇÃO - Tabela de Calibração ⭐⭐ -->
+            ${unit && unit.calibration ? `
+            <div class="calibration-section">
+                <h4>📊 Tabela de Calibração (${unit.numberOfSensors} sensores)</h4>
+                <table class="calibration-table">
+                    <thead>
+                        <tr>
+                            <th>%</th>
+                            <th>Litros</th>
+                            <th>Sensores Ativos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${unit.calibration.map(item => `
+                            <tr>
+                                <td>${item.percentage}%</td>
+                                <td>${item.liters}L</td>
+                                <td>${item.sensorCount}/${unit.numberOfSensors}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            ` : ''}
         </div>
     `;
 }
@@ -508,3 +565,4 @@ window.addEventListener('resize', () => {
 });
 
 console.log('✅ Dashboard carregado e pronto!');
+
