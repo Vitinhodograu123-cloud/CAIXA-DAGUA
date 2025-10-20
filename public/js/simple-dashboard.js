@@ -418,7 +418,11 @@ async function loadUnitData(unitId) {
 }
 
 // Exibir dados da unidade
+// Exibir dados da unidade - ⭐⭐ FUNÇÃO COMPLETAMENTE CORRIGIDA ⭐⭐
 function displayUnitData(data, unit) {
+    console.log('🔄 displayUnitData chamada com:', { data, unit }); // Debug
+    console.log('📊 Calibração disponível:', unit?.calibration); // Debug
+    
     const tanksGrid = document.getElementById('tanksGrid');
     
     if (data.error) {
@@ -439,38 +443,70 @@ function displayUnitData(data, unit) {
 
     // ⭐⭐ CALCULA LITROS - Use a calibração da unidade ⭐⭐
     let waterLevelDisplay = `${waterLevel}%`;
-    if (unit && unit.calibration) {
-        const liters = calculateLiters(waterLevel, unit.calibration);
-        if (liters !== null) {
-            waterLevelDisplay = `${waterLevel}% (${liters}L)`;
+    let calculatedLiters = null;
+    
+    if (unit && unit.calibration && unit.calibration.length > 0) {
+        calculatedLiters = calculateLiters(waterLevel, unit.calibration);
+        console.log(`💧 Calculando litros: ${waterLevel}% -> ${calculatedLiters}L`); // Debug
+        
+        if (calculatedLiters !== null) {
+            waterLevelDisplay = `${waterLevel}% (${calculatedLiters}L)`;
         }
     }
 
-    // ⭐⭐ FUNÇÃO AUXILIAR - Adicione esta função ⭐⭐
+    // ⭐⭐ FUNÇÃO AUXILIAR MELHORADA ⭐⭐
     function calculateLiters(percentage, calibration) {
-        if (!calibration || calibration.length === 0) return null;
+        if (!calibration || calibration.length === 0) {
+            console.log('❌ Nenhuma calibração disponível');
+            return null;
+        }
+        
+        console.log('📋 Calibração para cálculo:', calibration); // Debug
         
         const sortedCalibration = [...calibration].sort((a, b) => a.percentage - b.percentage);
         
+        // Encontra o ponto exato
         for (let i = 0; i < sortedCalibration.length; i++) {
             const current = sortedCalibration[i];
-            const next = sortedCalibration[i + 1];
             
             if (percentage === current.percentage) {
+                console.log(`✅ Ponto exato encontrado: ${percentage}% = ${current.liters}L`);
                 return current.liters;
-            }
-            
-            if (next && percentage > current.percentage && percentage <= next.percentage) {
-                const ratio = (percentage - current.percentage) / (next.percentage - current.percentage);
-                return Math.round(current.liters + (next.liters - current.liters) * ratio);
             }
         }
         
+        // Interpolação entre pontos
+        for (let i = 0; i < sortedCalibration.length - 1; i++) {
+            const current = sortedCalibration[i];
+            const next = sortedCalibration[i + 1];
+            
+            if (percentage > current.percentage && percentage <= next.percentage) {
+                const ratio = (percentage - current.percentage) / (next.percentage - current.percentage);
+                const liters = Math.round(current.liters + (next.liters - current.liters) * ratio);
+                console.log(`📈 Interpolação: ${percentage}% entre ${current.percentage}% e ${next.percentage}% = ${liters}L`);
+                return liters;
+            }
+        }
+        
+        // Se for maior que o último ponto
+        if (percentage > sortedCalibration[sortedCalibration.length - 1].percentage) {
+            const lastLiters = sortedCalibration[sortedCalibration.length - 1].liters;
+            console.log(`📊 Usando último valor: ${percentage}% > ${sortedCalibration[sortedCalibration.length - 1].percentage}% = ${lastLiters}L`);
+            return lastLiters;
+        }
+        
+        console.log(`❌ Não foi possível calcular litros para ${percentage}%`);
         return null;
     }
 
+    // ⭐⭐ HTML ATUALIZADO COM DEBUG ⭐⭐
     tanksGrid.innerHTML = `
         <div class="data-display">
+            <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 12px;">
+                🔍 <strong>Debug:</strong> Unidade tem ${unit?.calibration?.length || 0} pontos de calibração | 
+                Nível: ${waterLevel}% | Litros: ${calculatedLiters !== null ? calculatedLiters + 'L' : 'Não calculado'}
+            </div>
+            
             <div class="data-item ${data.isLowLevel ? 'warning' : ''}">
                 <span class="data-label">💧 Nível de Água:</span>
                 <span class="data-value">${waterLevelDisplay}</span>
@@ -489,7 +525,7 @@ function displayUnitData(data, unit) {
                 ⏰ Última atualização: ${timestamp}
             </div>
             
-            <!-- ⭐⭐ NOVA SEÇÃO - Tabela de Calibração ⭐⭐ -->
+            <!-- ⭐⭐ TABELA DE CALIBRAÇÃO ⭐⭐ -->
             ${unit && unit.calibration ? `
             <div class="calibration-section">
                 <h4>📊 Tabela de Calibração (${unit.numberOfSensors} sensores)</h4>
@@ -503,7 +539,7 @@ function displayUnitData(data, unit) {
                     </thead>
                     <tbody>
                         ${unit.calibration.map(item => `
-                            <tr>
+                            <tr ${item.percentage === waterLevel ? 'style="background: #e8f5e8;"' : ''}>
                                 <td>${item.percentage}%</td>
                                 <td>${item.liters}L</td>
                                 <td>${item.sensorCount}/${unit.numberOfSensors}</td>
@@ -759,6 +795,7 @@ styleElement.textContent = calibrationStyles;
 document.head.appendChild(styleElement);
 
 console.log('✅ Dashboard carregado e pronto!');
+
 
 
 
