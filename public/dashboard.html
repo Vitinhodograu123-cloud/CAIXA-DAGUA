@@ -75,12 +75,27 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="unitSensors">Número de Sensores</label>
-                    <input type="number" id="unitSensors" required min="1" value="4">
+                    <label for="unitSensors">Número de Sensores (Boias)</label>
+                    <input type="number" id="unitSensors" required min="1" max="10" value="4" onchange="generateCalibrationTable()">
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                        ⚡ Digite a quantidade de sensores e preencha os litros para cada nível
+                    </small>
                 </div>
                 <div class="form-group">
                     <label for="unitDescription">Descrição</label>
                     <textarea id="unitDescription" placeholder="Descrição opcional"></textarea>
+                </div>
+                  <!-- ⭐⭐ NOVA TABELA DINÂMICA DE CALIBRAÇÃO ⭐⭐ -->
+                <div id="calibrationSection" style="display: none;">
+                    <div class="form-group">
+                        <label>📊 Configuração de Calibração</label>
+                        <div id="calibrationTable" class="calibration-table-container">
+                            <!-- Tabela será gerada dinamicamente aqui -->
+                        </div>
+                        <small style="color: #666; font-size: 12px;">
+                            💡 Preencha a quantidade de litros para cada nível de porcentagem
+                        </small>
+                    </div>
                 </div>
                 <div class="modal-buttons">
                     <button type="submit" class="btn-primary">Salvar</button>
@@ -129,6 +144,7 @@
 </body>
 
 </html>
+
 
 
 
