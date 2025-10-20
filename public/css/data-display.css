@@ -1,6 +1,20 @@
 /* Display de Dados Moderno */
+
+:root {
+    --color1: #2F7C6D;   /* Verde-petróleo escuro, dá sofisticação à sidebar */
+    --color2: #49C2A8;   /* Verde-água vívido, para botões e status online */
+    --color3: #F9F9F4;   /* Branco levemente amarelado, base do conteúdo */
+    --color4: #FFD166;   /* Amarelo suave e quente, para destaques */
+    --color5: #EF476F;   /* Rosa-avermelhado moderno, para alertas e erros */
+    --sidebar-width: 280px;
+    --border-radius: 14px;
+    --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.15);
+    --transition: all 0.25s ease-in-out;
+}
+
 .data-display {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--color1);
     padding: 2rem;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-lg);
@@ -207,3 +221,4 @@
 .progress-fill.success {
     background: var(--gradient-success);
 }
+
