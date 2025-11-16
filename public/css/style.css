@@ -75,6 +75,30 @@ body {
     color: var(--white);
 }
 
+/* BOTÃO ADICIONAR UNIDADE - VISÍVEL */
+#addUnitBtn {
+    display: flex !important;
+    background: var(--secondary);
+    color: var(--white);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+    box-shadow: var(--shadow);
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+#addUnitBtn:hover {
+    background: #27ae60;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
 .units-list {
     overflow-y: auto;
     flex-grow: 1;
@@ -336,17 +360,17 @@ body {
     margin-bottom: 2rem;
 }
 
-/* Cards de Dados - MAIORES para PC */
+/* Cards de Dados - MOBILE */
 .data-card {
     background: var(--white);
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     transition: var(--transition);
     border-left: 4px solid var(--primary);
     position: relative;
     overflow: hidden;
-    min-height: 200px;
+    min-height: 180px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -369,10 +393,10 @@ body {
     border-left-color: var(--secondary);
 }
 
-/* Display de Dados - MAIOR para PC */
+/* Display de Dados - MOBILE */
 .data-display {
     display: grid;
-    gap: 1.25rem;
+    gap: 1rem;
     flex-grow: 1;
 }
 
@@ -380,11 +404,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.25rem;
+    padding: 1rem;
     background: var(--primary);
     border-radius: var(--border-radius);
     transition: var(--transition);
-    min-height: 80px;
+    min-height: 70px;
 }
 
 .data-item:hover {
@@ -398,11 +422,11 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
 .data-value {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--white);
 }
@@ -624,7 +648,6 @@ body {
 /* Overlay para mobile */
 .sidebar-overlay {
     display: none;
-    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -702,25 +725,25 @@ body {
     
     /* Ajustes para tablets - data-display maior */
     .data-card {
-        padding: 2.5rem;
-        min-height: 250px;
+        padding: 2rem;
+        min-height: 220px;
     }
     
     .data-display {
-        gap: 1.5rem;
+        gap: 1.25rem;
     }
     
     .data-item {
-        padding: 1.5rem;
-        min-height: 90px;
+        padding: 1.25rem;
+        min-height: 80px;
     }
     
     .data-label {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
     
     .data-value {
-        font-size: 2rem;
+        font-size: 1.75rem;
     }
 }
 
@@ -744,25 +767,25 @@ body {
     
     /* Ajustes ESPECÍFICOS para PC - data-display BEM MAIOR */
     .data-card {
-        padding: 3rem;
-        min-height: 300px;
+        padding: 3rem !important;
+        min-height: 350px !important;
     }
     
     .data-display {
-        gap: 2rem;
+        gap: 2rem !important;
     }
     
     .data-item {
-        padding: 2rem;
-        min-height: 100px;
+        padding: 2rem !important;
+        min-height: 120px !important;
     }
     
     .data-label {
-        font-size: 1.2rem;
+        font-size: 1.3rem !important;
     }
     
     .data-value {
-        font-size: 2.5rem;
+        font-size: 3rem !important;
     }
 }
 
@@ -774,25 +797,25 @@ body {
     }
     
     .data-card {
-        padding: 3rem;
-        min-height: 320px;
+        padding: 3.5rem !important;
+        min-height: 400px !important;
     }
     
     .data-display {
-        gap: 2.25rem;
+        gap: 2.5rem !important;
     }
     
     .data-item {
-        padding: 2.25rem;
-        min-height: 110px;
+        padding: 2.5rem !important;
+        min-height: 140px !important;
     }
     
     .data-label {
-        font-size: 1.3rem;
+        font-size: 1.4rem !important;
     }
     
     .data-value {
-        font-size: 2.75rem;
+        font-size: 3.5rem !important;
     }
 }
 
@@ -804,25 +827,25 @@ body {
     }
     
     .data-card {
-        padding: 3.5rem;
-        min-height: 350px;
+        padding: 4rem !important;
+        min-height: 450px !important;
     }
     
     .data-display {
-        gap: 2.5rem;
+        gap: 3rem !important;
     }
     
     .data-item {
-        padding: 2.5rem;
-        min-height: 120px;
+        padding: 3rem !important;
+        min-height: 160px !important;
     }
     
     .data-label {
-        font-size: 1.4rem;
+        font-size: 1.5rem !important;
     }
     
     .data-value {
-        font-size: 3rem;
+        font-size: 4rem !important;
     }
 }
 
@@ -833,12 +856,12 @@ body {
     }
     
     .data-card {
-        padding: 1.5rem;
-        min-height: 180px;
+        padding: 1.25rem;
+        min-height: 160px;
     }
     
     .data-value {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
     }
     
     .sidebar {
@@ -916,6 +939,11 @@ body {
 .calibration-table-container tr:last-child td {
     border-bottom: none;
 }
+
+/* REMOVIDO: A regra problemática que escondia o botão */
+/* #addUnitBtn {
+    display: none !important;
+} */
 
 #menuToggle {
     display: flex;
