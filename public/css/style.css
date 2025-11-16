@@ -751,7 +751,7 @@ body {
 @media (min-width: 1024px) {
     .tanks-grid {
         grid-template-columns: repeat(1, 1fr); /* APENAS 1 COLUNA para ocupar toda a largura */
-        gap: 2.5rem;
+        gap: 2rem;
     }
     
     .sidebar {
@@ -762,97 +762,103 @@ body {
     .main-content {
         margin-left: var(--sidebar-width);
         width: calc(100% - var(--sidebar-width));
-        padding: 2.5rem;
+        padding: 2rem;
     }
     
-    /* Ajustes ESPECÍFICOS para PC - data-display BEM MAIOR NA LARGURA */
+    /* Ajustes ESPECÍFICOS para PC - LARGURA TOTAL mas ALTURA CONTROLADA */
     .data-card {
-        padding: 3rem !important;
-        min-height: 300px !important;
-        min-width: 100% !important; /* Ocupa toda a largura disponível */
+        padding: 2.5rem !important;
+        min-height: 280px !important; /* Reduzi a altura */
+        max-height: 350px !important; /* Limite máximo */
+        width: 100% !important;
     }
     
     .data-display {
-        gap: 2rem !important;
-        grid-template-columns: 1fr; /* Uma coluna para ocupar toda a largura */
+        gap: 1.5rem !important;
+        grid-template-columns: 1fr;
     }
     
     .data-item {
-        padding: 2rem !important;
-        min-height: 120px !important;
-        width: 100% !important; /* Ocupa 100% da largura do container */
+        padding: 1.5rem !important; /* Reduzi o padding */
+        min-height: 90px !important; /* Reduzi a altura */
+        max-height: 100px !important; /* Limite máximo */
+        width: 100% !important;
     }
     
     .data-label {
-        font-size: 1.5rem !important; /* Aumentei ainda mais */
+        font-size: 1.3rem !important;
     }
     
     .data-value {
-        font-size: 3.5rem !important; /* Aumentei ainda mais */
+        font-size: 2.5rem !important; /* Reduzi um pouco */
     }
 }
 
 /* Desktop Grande */
 @media (min-width: 1200px) {
     .tanks-grid {
-        grid-template-columns: repeat(1, 1fr); /* Mantém 1 coluna */
-        gap: 3rem;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 2.5rem;
     }
     
     .data-card {
-        padding: 3.5rem !important;
-        min-height: 350px !important;
-        min-width: 100% !important;
+        padding: 3rem !important;
+        min-height: 300px !important;
+        max-height: 380px !important;
+        width: 100% !important;
     }
     
     .data-display {
-        gap: 2.5rem !important;
+        gap: 1.75rem !important;
     }
     
     .data-item {
-        padding: 2.5rem !important;
-        min-height: 140px !important;
+        padding: 1.75rem !important;
+        min-height: 100px !important;
+        max-height: 110px !important;
         width: 100% !important;
     }
     
     .data-label {
-        font-size: 1.7rem !important;
+        font-size: 1.4rem !important;
     }
     
     .data-value {
-        font-size: 4rem !important;
+        font-size: 2.8rem !important;
     }
 }
 
 /* Desktop Muito Grande */
 @media (min-width: 1440px) {
     .tanks-grid {
-        grid-template-columns: repeat(1, 1fr); /* Mantém 1 coluna */
-        gap: 3.5rem;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 3rem;
     }
     
     .data-card {
-        padding: 4rem !important;
-        min-height: 400px !important;
-        min-width: 100% !important;
+        padding: 3.5rem !important;
+        min-height: 320px !important;
+        max-height: 400px !important;
+        width: 100% !important;
     }
     
     .data-display {
-        gap: 3rem !important;
+        gap: 2rem !important;
     }
     
     .data-item {
-        padding: 3rem !important;
-        min-height: 160px !important;
+        padding: 2rem !important;
+        min-height: 110px !important;
+        max-height: 120px !important;
         width: 100% !important;
     }
     
     .data-label {
-        font-size: 1.8rem !important;
+        font-size: 1.5rem !important;
     }
     
     .data-value {
-        font-size: 4.5rem !important;
+        font-size: 3rem !important;
     }
 }
 
