@@ -13,6 +13,678 @@
     <script>
         window.serverPort = window.location.port || '3000';
     </script>
+    <style>
+        /* Nova paleta de cores moderna e harmoniosa */
+        :root {
+            --primary: #3498db;       /* Azul principal */
+            --primary-dark: #2980b9;  /* Azul escuro */
+            --secondary: #2ecc71;     /* Verde para status positivos */
+            --accent: #9b59b6;        /* Roxo para destaques */
+            --warning: #f39c12;       /* Laranja para alertas */
+            --danger: #e74c3c;        /* Vermelho para erros */
+            --light: #ecf0f1;         /* Cinza claro para fundos */
+            --dark: #2c3e50;          /* Cinza escuro para texto */
+            --gray: #95a5a6;          /* Cinza médio */
+            --white: #ffffff;         /* Branco */
+            --sidebar-width: 280px;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            background: var(--light);
+            color: var(--dark);
+            min-height: 100vh;
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar - Mobile First */
+        .sidebar {
+            background: var(--dark);
+            color: var(--white);
+            width: var(--sidebar-width);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .units-list {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 0.5rem;
+        }
+
+        /* Scrollbar personalizado */
+        .units-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .units-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        .units-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        .unit-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .unit-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .unit-item.active {
+            background: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .unit-item-content h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .unit-location {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0.25rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .unit-type {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent);
+            background: rgba(155, 89, 182, 0.2);
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            display: inline-block;
+            margin: 0.25rem 0;
+        }
+
+        .unit-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .unit-status.online {
+            background: rgba(46, 204, 113, 0.8);
+        }
+
+        .unit-status.offline {
+            background: rgba(231, 76, 60, 0.8);
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .user-details {
+            flex-grow: 1;
+        }
+
+        .user-details span {
+            display: block;
+            font-weight: 600;
+        }
+
+        .user-details small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.75rem;
+        }
+
+        /* Main Content - Mobile First */
+        .main-content {
+            flex: 1;
+            padding: 1rem;
+            background: var(--white);
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .main-header {
+            background: var(--white);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .last-update {
+            font-size: 0.85rem;
+            color: var(--gray);
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Botões */
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Conteúdo Principal */
+        .center-message {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--gray);
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .center-message h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .tank-content {
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Grid de Dados */
+        .tanks-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Cards de Dados */
+        .data-card {
+            background: var(--white);
+            padding: 1.25rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-left: 4px solid var(--primary);
+            position: relative;
+        }
+
+        .data-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .data-card.warning {
+            border-left-color: var(--warning);
+        }
+
+        .data-card.danger {
+            border-left-color: var(--danger);
+        }
+
+        .data-card.success {
+            border-left-color: var(--secondary);
+        }
+
+        /* Display de Dados */
+        .data-display {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--light);
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .data-item:hover {
+            background: rgba(236, 240, 241, 0.8);
+        }
+
+        .data-label {
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .data-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .data-item.warning .data-value {
+            color: var(--warning);
+        }
+
+        .data-item.danger .data-value {
+            color: var(--danger);
+        }
+
+        .data-item.success .data-value {
+            color: var(--secondary);
+        }
+
+        .alert-badge {
+            background: var(--danger);
+            color: var(--white);
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .update-time {
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: var(--border-radius);
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-top: 1rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background: var(--white);
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--light);
+            position: sticky;
+            top: 0;
+            background: var(--white);
+            z-index: 10;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--primary-dark);
+            font-size: 1.25rem;
+        }
+
+        .close {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        .modal-body {
+            padding: 1.25rem;
+        }
+
+        /* Formulários */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--light);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--white);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            position: sticky;
+            bottom: 0;
+            background: var(--white);
+            padding: 1rem 0;
+            border-top: 1px solid var(--light);
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Menu Toggle */
+        .menu-toggle {
+            display: flex;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: var(--transition);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-toggle:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Overlay para mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Animações */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsividade para tablets */
+        @media (min-width: 768px) {
+            .sidebar {
+                position: static;
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .menu-toggle {
+                display: none;
+            }
+            
+            .tanks-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .main-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .header-top {
+                width: auto;
+            }
+            
+            .last-update {
+                width: auto;
+                text-align: right;
+            }
+            
+            .btn-primary {
+                width: auto;
+            }
+            
+            .btn-secondary {
+                width: auto;
+            }
+        }
+
+        /* Responsividade para desktop */
+        @media (min-width: 1024px) {
+            .tanks-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .sidebar {
+                width: var(--sidebar-width);
+            }
+            
+            .main-content {
+                margin-left: var(--sidebar-width);
+                width: calc(100% - var(--sidebar-width));
+            }
+        }
+
+        /* Para telas muito pequenas */
+        @media (max-width: 360px) {
+            .main-content {
+                padding: 0.75rem;
+            }
+            
+            .data-card {
+                padding: 1rem;
+            }
+            
+            .data-value {
+                font-size: 1.1rem;
+            }
+            
+            .modal-content {
+                padding: 0.75rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard">
@@ -20,7 +692,9 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>Unidades</h2>
-                <button id="addUnitBtn" class="btn-primary" style="display: none;">+ Adicionar</button>
+                <button id="addUnitBtn" class="btn-primary" style="display: none;">
+                    <i class="fas fa-plus"></i> Adicionar
+                </button>
             </div>
             <div id="unitsList" class="units-list">
                 <!-- Unidades serão carregadas aqui -->
@@ -35,21 +709,26 @@
                         <small>Administrador</small>
                     </div>
                 </div>
-                <button id="logoutBtn" class="btn-secondary">Sair</button>
+                <button id="logoutBtn" class="btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
             </div>
         </aside>
 
+        <!-- Overlay para mobile -->
+        <div class="sidebar-overlay"></div>
+
         <!-- Main Content -->
         <main class="main-content">
-            <button id="menuToggle" class="menu-toggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <header class="main-header">
+            <div class="header-top">
+                <button id="menuToggle" class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <h1 id="currentUnit">Selecione uma unidade</h1>
-                <div class="header-actions">
-                    <span class="last-update">Última atualização: <span id="lastUpdateTime">--:--:--</span></span>
-                </div>
-            </header>
+            </div>
+            <div class="header-actions">
+                <span class="last-update">Última atualização: <span id="lastUpdateTime">--:--:--</span></span>
+            </div>
 
             <div id="noSelection" class="center-message">
                 <h2>👈 Selecione uma unidade para visualizar os dados</h2>
@@ -67,12 +746,12 @@
 
     <!-- Modal para adicionar unidade -->
     <div id="addUnitModal" class="modal">
-        <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
-            <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 10; padding: 20px; border-bottom: 1px solid #eee;">
-                <h2 style="margin: 0;">Adicionar Nova Unidade</h2>
-                <span class="close" style="position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer;">&times;</span>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Adicionar Nova Unidade</h2>
+                <span class="close">&times;</span>
             </div>
-            <div class="modal-body" style="padding: 20px;">
+            <div class="modal-body">
                 <form id="addUnitForm">
                     <div class="form-group">
                         <label for="unitName">Nome da Unidade</label>
@@ -93,7 +772,7 @@
                     <div class="form-group">
                         <label for="unitSensors">Número de Sensores (Boias)</label>
                         <input type="number" id="unitSensors" required min="1" max="20" value="4" onchange="generateCalibrationTable()">
-                        <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                        <small style="color: var(--gray); font-size: 0.85rem; display: block; margin-top: 5px;">
                             ⚡ Digite a quantidade de sensores e preencha os litros para cada nível
                         </small>
                     </div>
@@ -101,11 +780,11 @@
                     <!-- ⭐⭐ NOVA TABELA DINÂMICA DE CALIBRAÇÃO COM SCROLL ⭐⭐ -->
                     <div id="calibrationSection" style="display: none;">
                         <div class="form-group">
-                            <label style="font-weight: bold; color: #333;">📊 Configuração de Calibração</label>
-                            <div id="calibrationTable" class="calibration-table-container" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
+                            <label style="font-weight: bold; color: var(--dark);">📊 Configuração de Calibração</label>
+                            <div id="calibrationTable" class="calibration-table-container" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--light); border-radius: var(--border-radius); padding: 10px;">
                                 <!-- Tabela será gerada dinamicamente aqui -->
                             </div>
-                            <small style="color: #666; font-size: 12px;">
+                            <small style="color: var(--gray); font-size: 0.85rem;">
                                 💡 Preencha a quantidade de litros para cada nível de porcentagem
                             </small>
                         </div>
@@ -115,7 +794,7 @@
                         <label for="unitDescription">Descrição</label>
                         <textarea id="unitDescription" placeholder="Descrição opcional" style="resize: vertical; min-height: 60px;"></textarea>
                     </div>
-                    <div class="modal-buttons" style="position: sticky; bottom: 0; background: white; padding: 15px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                    <div class="modal-buttons">
                         <button type="submit" class="btn-primary">Salvar</button>
                         <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
                     </div>
@@ -131,5 +810,42 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/simple-dashboard.js"></script>
+    <script>
+        // Script para controle do menu mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                    overlay.classList.toggle('active');
+                });
+                
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('active');
+                });
+            }
+            
+            // Fechar modal ao clicar no X
+            const closeModalBtn = document.querySelector('.close');
+            const modal = document.getElementById('addUnitModal');
+            
+            if (closeModalBtn && modal) {
+                closeModalBtn.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+            }
+            
+            // Fechar modal ao clicar fora
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
