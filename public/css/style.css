@@ -750,7 +750,7 @@ body {
 /* Desktop */
 @media (min-width: 1024px) {
     .tanks-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(1, 1fr); /* APENAS 1 COLUNA para ocupar toda a largura */
         gap: 2.5rem;
     }
     
@@ -765,40 +765,44 @@ body {
         padding: 2.5rem;
     }
     
-    /* Ajustes ESPECÍFICOS para PC - data-display BEM MAIOR */
+    /* Ajustes ESPECÍFICOS para PC - data-display BEM MAIOR NA LARGURA */
     .data-card {
         padding: 3rem !important;
-        min-height: 350px !important;
+        min-height: 300px !important;
+        min-width: 100% !important; /* Ocupa toda a largura disponível */
     }
     
     .data-display {
         gap: 2rem !important;
+        grid-template-columns: 1fr; /* Uma coluna para ocupar toda a largura */
     }
     
     .data-item {
         padding: 2rem !important;
         min-height: 120px !important;
+        width: 100% !important; /* Ocupa 100% da largura do container */
     }
     
     .data-label {
-        font-size: 1.3rem !important;
+        font-size: 1.5rem !important; /* Aumentei ainda mais */
     }
     
     .data-value {
-        font-size: 3rem !important;
+        font-size: 3.5rem !important; /* Aumentei ainda mais */
     }
 }
 
 /* Desktop Grande */
 @media (min-width: 1200px) {
     .tanks-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 2.5rem;
+        grid-template-columns: repeat(1, 1fr); /* Mantém 1 coluna */
+        gap: 3rem;
     }
     
     .data-card {
         padding: 3.5rem !important;
-        min-height: 400px !important;
+        min-height: 350px !important;
+        min-width: 100% !important;
     }
     
     .data-display {
@@ -808,27 +812,29 @@ body {
     .data-item {
         padding: 2.5rem !important;
         min-height: 140px !important;
+        width: 100% !important;
     }
     
     .data-label {
-        font-size: 1.4rem !important;
+        font-size: 1.7rem !important;
     }
     
     .data-value {
-        font-size: 3.5rem !important;
+        font-size: 4rem !important;
     }
 }
 
 /* Desktop Muito Grande */
 @media (min-width: 1440px) {
     .tanks-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 3rem;
+        grid-template-columns: repeat(1, 1fr); /* Mantém 1 coluna */
+        gap: 3.5rem;
     }
     
     .data-card {
         padding: 4rem !important;
-        min-height: 450px !important;
+        min-height: 400px !important;
+        min-width: 100% !important;
     }
     
     .data-display {
@@ -838,14 +844,15 @@ body {
     .data-item {
         padding: 3rem !important;
         min-height: 160px !important;
+        width: 100% !important;
     }
     
     .data-label {
-        font-size: 1.5rem !important;
+        font-size: 1.8rem !important;
     }
     
     .data-value {
-        font-size: 4rem !important;
+        font-size: 4.5rem !important;
     }
 }
 
@@ -939,11 +946,6 @@ body {
 .calibration-table-container tr:last-child td {
     border-bottom: none;
 }
-
-/* REMOVIDO: A regra problemática que escondia o botão */
-/* #addUnitBtn {
-    display: none !important;
-} */
 
 #menuToggle {
     display: flex;
