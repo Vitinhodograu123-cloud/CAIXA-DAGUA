@@ -624,6 +624,7 @@ body {
 /* Overlay para mobile */
 .sidebar-overlay {
     display: none;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -914,11 +915,6 @@ body {
 
 .calibration-table-container tr:last-child td {
     border-bottom: none;
-}
-
-/* Garantir que elementos específicos mantenham funcionalidade */
-#addUnitBtn {
-    display: none !important;
 }
 
 #menuToggle {
