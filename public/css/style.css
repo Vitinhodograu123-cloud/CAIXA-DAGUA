@@ -617,7 +617,6 @@ body {
 /* Overlay para mobile */
 .sidebar-overlay {
     display: none;
-    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -813,3 +812,4 @@ body {
 #menuToggle {
     display: flex;
 }
+
