@@ -328,7 +328,7 @@ body {
     animation: fadeIn 0.5s ease;
 }
 
-/* Grid de Dados */
+/* Grid de Dados - MOBILE FIRST */
 .tanks-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -336,16 +336,20 @@ body {
     margin-bottom: 2rem;
 }
 
-/* Cards de Dados */
+/* Cards de Dados - MAIORES para PC */
 .data-card {
     background: var(--white);
-    padding: 1.5rem;
+    padding: 2rem;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     transition: var(--transition);
     border-left: 4px solid var(--primary);
     position: relative;
     overflow: hidden;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .data-card:hover {
@@ -365,20 +369,22 @@ body {
     border-left-color: var(--secondary);
 }
 
-/* Display de Dados */
+/* Display de Dados - MAIOR para PC */
 .data-display {
     display: grid;
-    gap: 1rem;
+    gap: 1.25rem;
+    flex-grow: 1;
 }
 
 .data-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 1.25rem;
     background: var(--primary);
     border-radius: var(--border-radius);
     transition: var(--transition);
+    min-height: 80px;
 }
 
 .data-item:hover {
@@ -392,10 +398,11 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 1rem;
 }
 
 .data-value {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--white);
 }
@@ -630,7 +637,9 @@ body {
     display: block;
 }
 
-/* Responsividade para Tablets */
+/* ========== RESPONSIVIDADE ========== */
+
+/* Tablets */
 @media (min-width: 768px) {
     .sidebar {
         position: static;
@@ -648,6 +657,7 @@ body {
     
     .tanks-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
     }
     
     .main-header {
@@ -688,12 +698,36 @@ body {
         max-width: 500px;
         margin: 50px auto;
     }
+    
+    /* Ajustes para tablets - data-display maior */
+    .data-card {
+        padding: 2.5rem;
+        min-height: 250px;
+    }
+    
+    .data-display {
+        gap: 1.5rem;
+    }
+    
+    .data-item {
+        padding: 1.5rem;
+        min-height: 90px;
+    }
+    
+    .data-label {
+        font-size: 1.1rem;
+    }
+    
+    .data-value {
+        font-size: 2rem;
+    }
 }
 
-/* Responsividade para Desktop */
+/* Desktop */
 @media (min-width: 1024px) {
     .tanks-grid {
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2.5rem;
     }
     
     .sidebar {
@@ -704,6 +738,90 @@ body {
     .main-content {
         margin-left: var(--sidebar-width);
         width: calc(100% - var(--sidebar-width));
+        padding: 2.5rem;
+    }
+    
+    /* Ajustes ESPECÍFICOS para PC - data-display BEM MAIOR */
+    .data-card {
+        padding: 3rem;
+        min-height: 300px;
+    }
+    
+    .data-display {
+        gap: 2rem;
+    }
+    
+    .data-item {
+        padding: 2rem;
+        min-height: 100px;
+    }
+    
+    .data-label {
+        font-size: 1.2rem;
+    }
+    
+    .data-value {
+        font-size: 2.5rem;
+    }
+}
+
+/* Desktop Grande */
+@media (min-width: 1200px) {
+    .tanks-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2.5rem;
+    }
+    
+    .data-card {
+        padding: 3rem;
+        min-height: 320px;
+    }
+    
+    .data-display {
+        gap: 2.25rem;
+    }
+    
+    .data-item {
+        padding: 2.25rem;
+        min-height: 110px;
+    }
+    
+    .data-label {
+        font-size: 1.3rem;
+    }
+    
+    .data-value {
+        font-size: 2.75rem;
+    }
+}
+
+/* Desktop Muito Grande */
+@media (min-width: 1440px) {
+    .tanks-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 3rem;
+    }
+    
+    .data-card {
+        padding: 3.5rem;
+        min-height: 350px;
+    }
+    
+    .data-display {
+        gap: 2.5rem;
+    }
+    
+    .data-item {
+        padding: 2.5rem;
+        min-height: 120px;
+    }
+    
+    .data-label {
+        font-size: 1.4rem;
+    }
+    
+    .data-value {
+        font-size: 3rem;
     }
 }
 
@@ -714,11 +832,12 @@ body {
     }
     
     .data-card {
-        padding: 1.25rem;
+        padding: 1.5rem;
+        min-height: 180px;
     }
     
     .data-value {
-        font-size: 1.3rem;
+        font-size: 1.5rem;
     }
     
     .sidebar {
@@ -751,13 +870,6 @@ body {
     
     .tanks-grid {
         grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-/* Para telas grandes */
-@media (min-width: 1200px) {
-    .tanks-grid {
-        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -812,4 +924,3 @@ body {
 #menuToggle {
     display: flex;
 }
-
