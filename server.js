@@ -124,6 +124,19 @@ app.get('/api/units/all', async (req, res) => {
     }
 });
 
+// Rota de teste - adicione antes das outras rotas
+app.post('/api/test-forgot-password', async (req, res) => {
+    console.log('🎯 TESTE: Rota de teste acessada');
+    console.log('Dados:', req.body);
+    
+    // Simula uma resposta rápida
+    res.json({
+        success: true,
+        message: 'Teste funcionando!',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // POST /api/units/create - Criar nova unidade
 // POST /api/units/create - ⭐⭐ ATUALIZADA ⭐⭐
 app.post('/api/units/create', async (req, res) => {
@@ -903,6 +916,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
