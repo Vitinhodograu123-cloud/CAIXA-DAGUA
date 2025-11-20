@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tickets de Manutenção - AcquaTrack</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --success-color: #06d6a0;
+            --warning-color: #ffd166;
+            --danger-color: #ef476f;
+            --dark-color: #2b2d42;
+            --light-color: #f8f9fa;
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: var(--dark-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .filters {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .filter-group select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .tickets-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        }
+
+        .ticket-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.2s;
+        }
+
+        .ticket-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .ticket-card.critical {
+            border-left-color: var(--danger-color);
+        }
+
+        .ticket-card.high {
+            border-left-color: #ff9e00;
+        }
+
+        .ticket-card.medium {
+            border-left-color: var(--warning-color);
+        }
+
+        .ticket-card.low {
+            border-left-color: var(--success-color);
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .ticket-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            flex: 1;
+        }
+
+        .ticket-priority {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-critical { background: var(--danger-color); color: white; }
+        .priority-high { background: #ff9e00; color: white; }
+        .priority-medium { background: var(--warning-color); color: #333; }
+        .priority-low { background: var(--success-color); color: white; }
+
+        .ticket-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .ticket-description {
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .ticket-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d12a55;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #05b888;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-open { background: #e3f2fd; color: #1976d2; }
+        .status-in_progress { background: #fff3e0; color: #f57c00; }
+        .status-resolved { background: #e8f5e8; color: #388e3c; }
+        .status-closed { background: #f5f5f5; color: #666; }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--primary-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-tools"></i> Tickets de Manutenção</h1>
+            <p>Gerencie os problemas detectados no sistema</p>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="statusFilter">Status</label>
+                <select id="statusFilter">
+                    <option value="">Todos</option>
+                    <option value="open">Aberto</option>
+                    <option value="in_progress">Em Andamento</option>
+                    <option value="resolved">Resolvido</option>
+                    <option value="closed">Fechado</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="priorityFilter">Prioridade</label>
+                <select id="priorityFilter">
+                    <option value="">Todas</option>
+                    <option value="critical">Crítica</option>
+                    <option value="high">Alta</option>
+                    <option value="medium">Média</option>
+                    <option value="low">Baixa</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="typeFilter">Tipo</label>
+                <select id="typeFilter">
+                    <option value="">Todos</option>
+                    <option value="vibration">Vibração</option>
+                    <option value="low_water">Nível Baixo</option>
+                    <option value="high_temperature">Temperatura Alta</option>
+                    <option value="sensor_failure">Falha de Sensor</option>
+                    <option value="other">Outro</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Carregando tickets...
+        </div>
+
+        <div id="ticketsContainer" class="tickets-grid" style="display: none;">
+            <!-- Tickets serão carregados aqui -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <i class="fas fa-inbox"></i>
+            <h3>Nenhum ticket encontrado</h3>
+            <p>Não há tickets que correspondam aos filtros selecionados.</p>
+        </div>
+    </div>
+
+    <script>
+        let allTickets = [];
+
+        // Carregar tickets
+        async function loadTickets() {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('ticketsContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const response = await fetch('/api/tickets', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    allTickets = data.tickets;
+                    applyFilters();
+                } else {
+                    throw new Error(data.message);
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar tickets:', error);
+                alert('Erro ao carregar tickets: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Aplicar filtros
+        function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            let filteredTickets = allTickets;
+
+            if (statusFilter) {
+                filteredTickets = filteredTickets.filter(ticket => ticket.status === statusFilter);
+            }
+
+            if (priorityFilter) {
+                filteredTickets = filteredTickets.filter(ticket => ticket.priority === priorityFilter);
+            }
+
+            if (typeFilter) {
+                filteredTickets = filteredTickets.filter(ticket => ticket.issueType === typeFilter);
+            }
+
+            renderTickets(filteredTickets);
+        }
+
+        // Renderizar tickets
+        function renderTickets(tickets) {
+            const container = document.getElementById('ticketsContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            if (tickets.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = tickets.map(ticket => `
+                <div class="ticket-card ${ticket.priority}">
+                    <div class="ticket-header">
+                        <div>
+                            <div class="ticket-title">${ticket.title}</div>
+                            <div class="ticket-meta">
+                                <span><i class="fas fa-building"></i> ${ticket.unitId.name}</span>
+                                <span><i class="fas fa-water"></i> ${ticket.tankId.name}</span>
+                                <span class="status-badge status-${ticket.status}">
+                                    ${getStatusText(ticket.status)}
+                                </span>
+                            </div>
+                        </div>
+                        <span class="ticket-priority priority-${ticket.priority}">
+                            ${getPriorityText(ticket.priority)}
+                        </span>
+                    </div>
+                    
+                    <div class="ticket-description">
+                        ${ticket.description}
+                    </div>
+
+                    <div class="ticket-meta">
+                        <span><i class="fas fa-calendar"></i> ${new Date(ticket.createdAt).toLocaleDateString('pt-BR')}</span>
+                        <span><i class="fas fa-tag"></i> ${getTypeText(ticket.issueType)}</span>
+                    </div>
+
+                    ${ticket.readingsData ? `
+                        <div class="ticket-meta">
+                            <small>
+                                <strong>Dados da leitura:</strong> 
+                                Nível: ${ticket.readingsData.waterLevel}% | 
+                                Temp: ${ticket.readingsData.temperature}°C |
+                                Vibrações: ${ticket.readingsData.vibrationCount}
+                            </small>
+                        </div>
+                    ` : ''}
+
+                    <div class="ticket-actions">
+                        ${ticket.status === 'open' ? `
+                            <button class="btn btn-success" onclick="updateTicket('${ticket._id}', 'in_progress')">
+                                <i class="fas fa-play"></i> Iniciar
+                            </button>
+                        ` : ''}
+                        
+                        ${ticket.status === 'in_progress' ? `
+                            <button class="btn btn-success" onclick="updateTicket('${ticket._id}', 'resolved')">
+                                <i class="fas fa-check"></i> Resolver
+                            </button>
+                        ` : ''}
+
+                        <button class="btn btn-danger" onclick="deleteTicket('${ticket._id}')">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Atualizar ticket
+        async function updateTicket(ticketId, status) {
+            if (!confirm('Tem certeza que deseja atualizar o status deste ticket?')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/tickets/${ticketId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Ticket atualizado com sucesso!');
+                    loadTickets();
+                } else {
+                    throw new Error(data.message);
+                }
+
+            } catch (error) {
+                console.error('Erro ao atualizar ticket:', error);
+                alert('Erro ao atualizar ticket: ' + error.message);
+            }
+        }
+
+        // Excluir ticket
+        async function deleteTicket(ticketId) {
+            if (!confirm('Tem certeza que deseja excluir este ticket? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/tickets/${ticketId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Ticket excluído com sucesso!');
+                    loadTickets();
+                } else {
+                    throw new Error(data.message);
+                }
+
+            } catch (error) {
+                console.error('Erro ao excluir ticket:', error);
+                alert('Erro ao excluir ticket: ' + error.message);
+            }
+        }
+
+        // Funções auxiliares para traduzir os valores
+        function getStatusText(status) {
+            const statusMap = {
+                'open': 'Aberto',
+                'in_progress': 'Em Andamento',
+                'resolved': 'Resolvido',
+                'closed': 'Fechado'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getPriorityText(priority) {
+            const priorityMap = {
+                'critical': 'Crítica',
+                'high': 'Alta',
+                'medium': 'Média',
+                'low': 'Baixa'
+            };
+            return priorityMap[priority] || priority;
+        }
+
+        function getTypeText(type) {
+            const typeMap = {
+                'vibration': 'Vibração',
+                'low_water': 'Nível Baixo',
+                'high_temperature': 'Temperatura Alta',
+                'sensor_failure': 'Falha de Sensor',
+                'other': 'Outro'
+            };
+            return typeMap[type] || type;
+        }
+
+        // Event listeners para filtros
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('priorityFilter').addEventListener('change', applyFilters);
+        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+
+        // Verificar autenticação e carregar tickets
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+            loadTickets();
+        });
+    </script>
+</body>
+</html>
