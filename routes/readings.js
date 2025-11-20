@@ -7,10 +7,14 @@ const { validateApiKey, validateDeviceData } = require('../middleware/validation
 // Receber dados do ESP32
 router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => {
   try {
+    console.log('📥 Dados recebidos do ESP32:', req.body);
+    console.log('🏭 Unidade:', req.unit.name);
+
     const { device_id, water_level, temperature, vibration, vibration_count, boias } = req.body;
 
     // Busca o tanque pelo device_id
     let tank = await Tank.findOne({ deviceId: device_id });
+    console.log('🔍 Tanque encontrado:', tank ? tank.name : 'Não encontrado, criando novo...');
 
     if (!tank) {
       // Se o tanque não existe, cria um novo
@@ -22,9 +26,11 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
         numberOfSensors: boias ? boias.length : 1
       });
       await tank.save();
+      console.log('✅ Novo tanque criado:', tank.name);
 
       // Adiciona o tanque à unidade
       await req.unit.updateOne({ $push: { tanks: tank._id } });
+      console.log('✅ Tanque adicionado à unidade');
     }
 
     // Cria nova leitura
@@ -38,9 +44,10 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
     });
 
     await reading.save();
+    console.log('✅ Leitura salva no banco');
 
     // Atualiza última leitura do tanque
-    await tank.updateOne({
+    await Tank.findByIdAndUpdate(tank._id, {
       lastReading: {
         waterLevel: water_level,
         temperature: temperature,
@@ -49,11 +56,22 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
         timestamp: new Date()
       }
     });
+    console.log('✅ Última leitura atualizada');
 
-    res.status(201).json({ message: 'Dados recebidos com sucesso' });
+    res.status(201).json({ 
+      success: true,
+      message: 'Dados recebidos e processados com sucesso',
+      tankId: tank._id,
+      readingId: reading._id
+    });
+
   } catch (error) {
-    console.error('Erro ao processar dados:', error);
-    res.status(500).json({ message: 'Erro ao processar dados' });
+    console.error('❌ Erro ao processar dados:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Erro ao processar dados',
+      error: error.message 
+    });
   }
 });
 
@@ -73,9 +91,17 @@ router.get('/:tankId/history', async (req, res) => {
       .sort({ timestamp: -1 })
       .limit(1000);
 
-    res.json(readings);
+    res.json({
+      success: true,
+      count: readings.length,
+      readings: readings
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao buscar histórico' });
+    console.error('❌ Erro ao buscar histórico:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Erro ao buscar histórico' 
+    });
   }
 });
 
