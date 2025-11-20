@@ -3,12 +3,14 @@ const router = express.Router();
 const Tank = require('../database/models/Tank');
 const Reading = require('../database/models/Reading');
 const { validateApiKey, validateDeviceData } = require('../middleware/validation');
+const issueDetectionService = require('../services/issueDetectionService');
 
 // Receber dados do ESP32
 router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => {
   try {
     console.log('📥 Dados recebidos do ESP32:', JSON.stringify(req.body));
     console.log('🏭 Unidade autenticada:', req.unit.name);
+    console.log('🔑 API Key:', req.unit.apiKey);
 
     const { device_id, water_level, temperature, vibration, vibration_count, boias } = req.body;
 
@@ -44,7 +46,8 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
       temperature: temperature,
       vibration: vibration,
       vibrationCount: vibration_count || 0,
-      sensorStates: boias ? boias.map(b => b.estado === 'ativo') : [true, true, true, true]
+      sensorStates: boias ? boias.map(b => b.estado === 'ativo') : [true, true, true, true],
+      timestamp: new Date()
     });
 
     await reading.save();
@@ -62,6 +65,26 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
     });
     console.log('✅ Última leitura atualizada');
 
+    // 🔍 DETECTAR PROBLEMAS E CRIAR TICKETS
+    console.log('🔍 Verificando problemas...');
+    try {
+      const issues = await issueDetectionService.detectIssues(tank._id, {
+        waterLevel: water_level,
+        temperature: temperature,
+        vibration: vibration,
+        vibrationCount: vibration_count || 0
+      });
+
+      if (issues.length > 0) {
+        console.log(`⚠️ ${issues.length} problema(s) detectado(s) e tickets criados`);
+      } else {
+        console.log('✅ Nenhum problema detectado');
+      }
+    } catch (detectionError) {
+      console.error('❌ Erro na detecção de problemas:', detectionError);
+      // Não falha a requisição principal por causa da detecção
+    }
+
     res.status(201).json({ 
       success: true,
       message: 'Dados recebidos com sucesso',
@@ -71,6 +94,7 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
 
   } catch (error) {
     console.error('❌ ERRO AO PROCESSAR DADOS:', error);
+    console.error('❌ Stack trace:', error.stack);
     res.status(500).json({ 
       success: false,
       message: 'Erro ao processar dados',
@@ -107,6 +131,15 @@ router.get('/:tankId/history', async (req, res) => {
       message: 'Erro ao buscar histórico' 
     });
   }
+});
+
+// Rota de teste para verificar se a rota está funcionando
+router.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Rota de readings funcionando!',
+    timestamp: new Date().toISOString()
+  });
 });
 
 module.exports = router;
