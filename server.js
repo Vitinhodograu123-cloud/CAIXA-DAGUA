@@ -4,7 +4,6 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
-const passwordResetRoutes = require('./routes/passwordReset');
 require('dotenv').config();
 
 const app = express();
@@ -916,6 +915,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
