@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 
 // Configuração para Gmail (ou configure com seu provedor)
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransporter({
 // Para testes, você pode usar Ethereal Email
 const createTestTransporter = async () => {
   const testAccount = await nodemailer.createTestAccount();
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: 'smtp.ethereal.email',
     port: 587,
     secure: false,
@@ -77,3 +77,4 @@ const sendPasswordResetEmail = async (email, username, resetToken, resetUrl) => 
 };
 
 module.exports = { sendPasswordResetEmail };
+
