@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+const passwordResetRoutes = require('./routes/passwordReset');
 require('dotenv').config();
 
 const app = express();
@@ -34,6 +35,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.static('public'));
+app.use('/api/auth', passwordResetRoutes);
 
 // Conexão com MongoDB - Versão para Render
 const connectDB = async () => {
@@ -901,6 +903,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
