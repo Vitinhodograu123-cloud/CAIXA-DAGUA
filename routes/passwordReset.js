@@ -29,9 +29,6 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
-    // Aqui você pode adicionar uma verificação adicional se tiver email no usuário
-    // Por enquanto, vamos confiar que o usuário forneceu o email correto
-
     // Gere um token único
     const resetToken = crypto.randomBytes(32).toString('hex');
     
