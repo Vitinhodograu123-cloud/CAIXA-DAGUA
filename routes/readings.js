@@ -3,37 +3,40 @@ const router = express.Router();
 const Tank = require('../database/models/Tank');
 const Reading = require('../database/models/Reading');
 const { validateApiKey, validateDeviceData } = require('../middleware/validation');
-const issueDetectionService = require('../services/issueDetectionService');
 
 // Receber dados do ESP32
 router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => {
   try {
-    console.log('📥 Dados recebidos do ESP32:', req.body);
-    console.log('🏭 Unidade:', req.unit.name);
+    console.log('📥 Dados recebidos do ESP32:', JSON.stringify(req.body));
+    console.log('🏭 Unidade autenticada:', req.unit.name);
 
     const { device_id, water_level, temperature, vibration, vibration_count, boias } = req.body;
 
     // Busca o tanque pelo device_id
     let tank = await Tank.findOne({ deviceId: device_id });
-    console.log('🔍 Tanque encontrado:', tank ? tank.name : 'Não encontrado, criando novo...');
+    console.log('🔍 Tanque encontrado:', tank ? `${tank.name} (${tank._id})` : 'NÃO ENCONTRADO');
 
     if (!tank) {
+      console.log('🆕 Criando novo tanque...');
       // Se o tanque não existe, cria um novo
       tank = new Tank({
         unitId: req.unit._id,
         deviceId: device_id,
         name: `Tanque ${device_id}`,
-        totalCapacity: 1000, // Valor padrão
-        numberOfSensors: boias ? boias.length : 1
+        totalCapacity: 1000,
+        numberOfSensors: boias ? boias.length : 4,
+        sensorPercentages: [25, 50, 75, 100]
       });
+      
       await tank.save();
-      console.log('✅ Novo tanque criado:', tank.name);
+      console.log('✅ Novo tanque criado:', tank._id);
 
       // Adiciona o tanque à unidade
       await req.unit.updateOne({ $push: { tanks: tank._id } });
       console.log('✅ Tanque adicionado à unidade');
     }
 
+    console.log('💾 Criando nova leitura...');
     // Cria nova leitura
     const reading = new Reading({
       tankId: tank._id,
@@ -41,11 +44,11 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
       temperature: temperature,
       vibration: vibration,
       vibrationCount: vibration_count || 0,
-      sensorStates: boias ? boias.map(b => b.estado === 'ativo') : []
+      sensorStates: boias ? boias.map(b => b.estado === 'ativo') : [true, true, true, true]
     });
 
     await reading.save();
-    console.log('✅ Leitura salva no banco');
+    console.log('✅ Leitura salva:', reading._id);
 
     // Atualiza última leitura do tanque
     await Tank.findByIdAndUpdate(tank._id, {
@@ -61,13 +64,13 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
 
     res.status(201).json({ 
       success: true,
-      message: 'Dados recebidos e processados com sucesso',
+      message: 'Dados recebidos com sucesso',
       tankId: tank._id,
       readingId: reading._id
     });
 
   } catch (error) {
-    console.error('❌ Erro ao processar dados:', error);
+    console.error('❌ ERRO AO PROCESSAR DADOS:', error);
     res.status(500).json({ 
       success: false,
       message: 'Erro ao processar dados',
@@ -75,18 +78,6 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
     });
   }
 });
-
-console.log('🔍 Verificando problemas...');
-const issues = await issueDetectionService.detectIssues(tank._id, {
-  waterLevel: water_level,
-  temperature: temperature,
-  vibration: vibration,
-  vibrationCount: vibration_count || 0
-});
-
-if (issues.length > 0) {
-  console.log(`⚠️ ${issues.length} problema(s) detectado(s)`);
-}
 
 // Buscar histórico de leituras
 router.get('/:tankId/history', async (req, res) => {
@@ -119,4 +110,3 @@ router.get('/:tankId/history', async (req, res) => {
 });
 
 module.exports = router;
-
