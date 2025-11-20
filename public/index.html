@@ -490,9 +490,7 @@
         // Forgot password placeholder
         document.getElementById('forgot-password').addEventListener('click', function(e) {
             e.preventDefault();
-            const errorMessage = document.getElementById('error-message');
-            errorMessage.textContent = 'Entre em contato com o administrador do sistema para redefinir sua senha.';
-            errorMessage.style.display = 'block';
+            window.location.href = 'forgot-password.html';
         });
 
         // Check if user is already logged in
@@ -525,4 +523,5 @@
 
 </body>
 </html>
+
 
