@@ -87,4 +87,122 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// ... resto do código permanece igual
+// Verificar token válido
+router.get('/verify-reset-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    console.log('🔍 Verificando token:', token);
+
+    const resetToken = await PasswordResetToken.findOne({ 
+      token,
+      expiresAt: { $gt: new Date() }
+    }).populate('userId');
+
+    if (!resetToken) {
+      console.log('❌ Token inválido ou expirado');
+      return res.status(400).json({
+        success: false,
+        message: 'Token inválido ou expirado'
+      });
+    }
+
+    console.log('✅ Token válido para usuário:', resetToken.username);
+    res.json({
+      success: true,
+      username: resetToken.username
+    });
+
+  } catch (error) {
+    console.error('💥 Erro ao verificar token:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Redefinir senha com token
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    console.log('🔄 Iniciando redefinição de senha...');
+
+    if (!token || !newPassword) {
+      console.log('❌ Token ou senha não fornecidos');
+      return res.status(400).json({
+        success: false,
+        message: 'Token e nova senha são obrigatórios'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      console.log('❌ Senha muito curta');
+      return res.status(400).json({
+        success: false,
+        message: 'A senha deve ter pelo menos 6 caracteres'
+      });
+    }
+
+    console.log('🔍 Buscando token válido...');
+    // Encontre o token válido
+    const resetToken = await PasswordResetToken.findOne({ 
+      token,
+      expiresAt: { $gt: new Date() }
+    }).populate('userId');
+
+    if (!resetToken) {
+      console.log('❌ Token inválido ou expirado');
+      return res.status(400).json({
+        success: false,
+        message: 'Token inválido ou expirado'
+      });
+    }
+
+    console.log('✅ Token válido encontrado para:', resetToken.username);
+    console.log('🔐 Gerando hash da nova senha...');
+
+    // Hash da nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    console.log('💾 Atualizando senha do usuário...');
+    // Atualize a senha do usuário
+    await User.findByIdAndUpdate(resetToken.userId._id, {
+      password: hashedPassword
+    });
+
+    console.log('🧹 Limpando tokens...');
+    // Delete o token usado
+    await PasswordResetToken.deleteOne({ _id: resetToken._id });
+
+    // Delete todos os tokens antigos deste usuário
+    await PasswordResetToken.deleteMany({ userId: resetToken.userId._id });
+
+    console.log('✅ Senha redefinida com sucesso para:', resetToken.username);
+    res.json({
+      success: true,
+      message: 'Senha redefinida com sucesso!'
+    });
+
+  } catch (error) {
+    console.error('💥 Erro ao redefinir senha:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Rota de teste
+router.get('/test', (req, res) => {
+  console.log('✅ Rota de teste funcionando');
+  res.json({
+    success: true,
+    message: 'Rota de passwordReset funcionando!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ✅ EXPORTAÇÃO CORRETA - APENAS O ROUTER
+module.exports = router;
