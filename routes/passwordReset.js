@@ -23,31 +23,25 @@ router.post('/test-forgot', async (req, res) => {
 
 // Solicitar recuperação de senha
 router.post('/forgot-password', async (req, res) => {
-  console.log('🎯 === ROTA FORGOT-PASSWORD INICIADA ===');
+  console.log('🎯 === ROTA FORGOT-PASSWORD INICIADA (VERSÃO RÁPIDA) ===');
   console.log('📧 Dados recebidos:', JSON.stringify(req.body));
-  console.log('🕒 Timestamp:', new Date().toISOString());
   
   try {
     const { username, email } = req.body;
 
     console.log('🔍 Validando dados...');
     if (!username || !email) {
-      console.log('❌ Dados faltando - username ou email vazio');
       return res.status(400).json({
         success: false,
         message: 'Nome de usuário e email são obrigatórios'
       });
     }
 
-    console.log(`🔍 Buscando usuário no banco: "${username}"`);
-    
-    // Encontre o usuário pelo username
+    console.log(`🔍 Buscando usuário: "${username}"`);
     const user = await User.findOne({ username: username.trim() });
-    console.log('✅ Busca no banco concluída');
     
     if (!user) {
-      console.log('❌ Usuário não encontrado no banco');
-      // Por segurança, não revele se o usuário existe ou não
+      console.log('❌ Usuário não encontrado');
       return res.json({
         success: true,
         message: 'Se o usuário e email estiverem corretos, você receberá um email de recuperação'
@@ -55,13 +49,11 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     console.log('✅ Usuário encontrado:', user.username);
-    console.log('🔐 Gerando token...');
     
     // Gere um token único
     const resetToken = crypto.randomBytes(32).toString('hex');
     console.log('✅ Token gerado');
     
-    console.log('💾 Salvando token no banco...');
     // Salve o token no banco de dados
     await PasswordResetToken.create({
       userId: user._id,
@@ -74,44 +66,17 @@ router.post('/forgot-password', async (req, res) => {
     const resetUrl = `${req.protocol}://${req.get('host')}/reset-password.html?token=${resetToken}`;
     console.log('🔗 URL de reset gerada:', resetUrl);
 
-    console.log('📤 Enviando email...');
-    
-    // Envie o email com timeout para evitar travamento
-    const emailPromise = sendPasswordResetEmail(email, username, resetToken, resetUrl);
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout no envio de email')), 15000)
-    );
-
-    try {
-      const emailResult = await Promise.race([emailPromise, timeoutPromise]);
-      
-      if (!emailResult.success) {
-        console.error('❌ Falha ao enviar email:', emailResult.error);
-        // Mesmo com erro de email, retorne sucesso para o usuário
-        console.log('⚠️  Email falhou, mas continuando o processo...');
-      } else {
-        console.log('✅ Email enviado com sucesso');
-        if (emailResult.previewUrl) {
-          console.log('🔗 Preview URL:', emailResult.previewUrl);
-        }
-      }
-
-    } catch (emailError) {
-      console.error('❌ Erro/Timeout no envio de email:', emailError);
-      // Mesmo com erro, retorne sucesso para o usuário
-      console.log('⚠️  Email com problemas, mas continuando...');
-    }
-
-    console.log('📨 Enviando resposta para o cliente...');
+    // ✅ VERSÃO RÁPIDA: Retorna o link diretamente
+    console.log('📨 Enviando resposta COM LINK...');
     res.json({
       success: true,
-      message: 'Se o usuário e email estiverem corretos, você receberá um email de recuperação'
+      message: 'Link de recuperação gerado com sucesso!',
+      resetUrl: resetUrl, // 🔥 ENVIA O LINK DIRETAMENTE
+      instructions: 'Clique no link abaixo para redefinir sua senha:'
     });
-    console.log('🎯 === ROTA FORGOT-PASSWORD FINALIZADA ===');
 
   } catch (error) {
-    console.error('💥 ERRO CRÍTICO na recuperação de senha:', error);
-    console.error('💥 Stack trace:', error.stack);
+    console.error('💥 ERRO CRÍTICO:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
