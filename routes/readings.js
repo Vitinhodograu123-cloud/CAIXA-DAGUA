@@ -3,6 +3,7 @@ const router = express.Router();
 const Tank = require('../database/models/Tank');
 const Reading = require('../database/models/Reading');
 const { validateApiKey, validateDeviceData } = require('../middleware/validation');
+const issueDetectionService = require('../services/issueDetectionService');
 
 // Receber dados do ESP32
 router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => {
@@ -75,6 +76,18 @@ router.post('/receive', validateApiKey, validateDeviceData, async (req, res) => 
   }
 });
 
+console.log('🔍 Verificando problemas...');
+const issues = await issueDetectionService.detectIssues(tank._id, {
+  waterLevel: water_level,
+  temperature: temperature,
+  vibration: vibration,
+  vibrationCount: vibration_count || 0
+});
+
+if (issues.length > 0) {
+  console.log(`⚠️ ${issues.length} problema(s) detectado(s)`);
+}
+
 // Buscar histórico de leituras
 router.get('/:tankId/history', async (req, res) => {
   try {
@@ -106,3 +119,4 @@ router.get('/:tankId/history', async (req, res) => {
 });
 
 module.exports = router;
+
