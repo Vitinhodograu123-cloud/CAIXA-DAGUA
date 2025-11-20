@@ -7,6 +7,20 @@ const { sendPasswordResetEmail } = require('../services/emailService');
 
 const router = express.Router();
 
+// Rota de teste rápida
+router.post('/test-forgot', async (req, res) => {
+  console.log('🎯 TESTE: Rota /test-forgot acessada');
+  console.log('Dados recebidos:', req.body);
+  
+  // Resposta rápida para teste
+  res.json({
+    success: true,
+    message: 'Rota de teste funcionando!',
+    data: req.body,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Solicitar recuperação de senha
 router.post('/forgot-password', async (req, res) => {
   console.log('🎯 === ROTA FORGOT-PASSWORD INICIADA ===');
@@ -61,13 +75,31 @@ router.post('/forgot-password', async (req, res) => {
     console.log('🔗 URL de reset gerada:', resetUrl);
 
     console.log('📤 Enviando email...');
-    // Envie o email
-    const emailResult = await sendPasswordResetEmail(email, username, resetToken, resetUrl);
+    
+    // Envie o email com timeout para evitar travamento
+    const emailPromise = sendPasswordResetEmail(email, username, resetToken, resetUrl);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout no envio de email')), 15000)
+    );
 
-    if (!emailResult.success) {
-      console.error('❌ Falha ao enviar email:', emailResult.error);
-    } else {
-      console.log('✅ Email enviado com sucesso');
+    try {
+      const emailResult = await Promise.race([emailPromise, timeoutPromise]);
+      
+      if (!emailResult.success) {
+        console.error('❌ Falha ao enviar email:', emailResult.error);
+        // Mesmo com erro de email, retorne sucesso para o usuário
+        console.log('⚠️  Email falhou, mas continuando o processo...');
+      } else {
+        console.log('✅ Email enviado com sucesso');
+        if (emailResult.previewUrl) {
+          console.log('🔗 Preview URL:', emailResult.previewUrl);
+        }
+      }
+
+    } catch (emailError) {
+      console.error('❌ Erro/Timeout no envio de email:', emailError);
+      // Mesmo com erro, retorne sucesso para o usuário
+      console.log('⚠️  Email com problemas, mas continuando...');
     }
 
     console.log('📨 Enviando resposta para o cliente...');
