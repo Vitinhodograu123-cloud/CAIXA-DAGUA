@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const User = require('../database/models/User');
 const PasswordResetToken = require('../database/models/PasswordResetToken');
+const PasswordChangeLog = require('../database/models/PasswordChangeLog');
 const { sendPasswordResetEmail } = require('../services/emailService');
 
 const router = express.Router();
@@ -21,7 +22,7 @@ router.post('/test-forgot', async (req, res) => {
   });
 });
 
-// Solicitar recuperação de senha
+// Solicitar recuperação de senha - VERSÃO RÁPIDA
 router.post('/forgot-password', async (req, res) => {
   console.log('🎯 === ROTA FORGOT-PASSWORD INICIADA (VERSÃO RÁPIDA) ===');
   console.log('📧 Dados recebidos:', JSON.stringify(req.body));
@@ -72,7 +73,7 @@ router.post('/forgot-password', async (req, res) => {
       success: true,
       message: 'Link de recuperação gerado com sucesso!',
       resetUrl: resetUrl, // 🔥 ENVIA O LINK DIRETAMENTE
-      instructions: 'Clique no link abaixo para redefinir sua senha:'
+      instructions: 'Clique no botão abaixo para redefinir sua senha:'
     });
 
   } catch (error) {
@@ -119,10 +120,10 @@ router.get('/verify-reset-token/:token', async (req, res) => {
   }
 });
 
-// Redefinir senha com token
+// Redefinir senha com token - ATUALIZADA PARA REGISTRAR NO LOG
 router.post('/reset-password', async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { token, newPassword, email } = req.body; // Adiciona email no body
 
     console.log('🔄 Iniciando redefinição de senha...');
 
@@ -169,6 +170,17 @@ router.post('/reset-password', async (req, res) => {
       password: hashedPassword
     });
 
+    // ✅ REGISTRAR A TROCA DE SENHA NO LOG
+    console.log('📝 Registrando troca de senha no log...');
+    await PasswordChangeLog.create({
+      userId: resetToken.userId._id,
+      username: resetToken.username,
+      email: email || 'Não informado', // Usa o email fornecido ou padrão
+      changeType: 'reset',
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent')
+    });
+
     console.log('🧹 Limpando tokens...');
     // Delete o token usado
     await PasswordResetToken.deleteOne({ _id: resetToken._id });
@@ -184,6 +196,31 @@ router.post('/reset-password', async (req, res) => {
 
   } catch (error) {
     console.error('💥 Erro ao redefinir senha:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Rota para visualizar logs de troca de senha (apenas para admin)
+router.get('/change-logs', async (req, res) => {
+  try {
+    console.log('📋 Buscando logs de troca de senha...');
+    
+    const logs = await PasswordChangeLog.find({})
+      .populate('userId', 'username')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    console.log(`✅ ${logs.length} logs encontrados`);
+    res.json({
+      success: true,
+      logs: logs
+    });
+
+  } catch (error) {
+    console.error('💥 Erro ao buscar logs:', error);
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'
