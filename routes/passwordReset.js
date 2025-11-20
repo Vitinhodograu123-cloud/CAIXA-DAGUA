@@ -9,15 +9,21 @@ const router = express.Router();
 
 // Solicitar recuperação de senha
 router.post('/forgot-password', async (req, res) => {
+  console.log('📧 Recebida solicitação de recuperação de senha');
+  console.log('Dados recebidos:', req.body);
+  
   try {
     const { username, email } = req.body;
 
     if (!username || !email) {
+      console.log('❌ Dados faltando');
       return res.status(400).json({
         success: false,
         message: 'Nome de usuário e email são obrigatórios'
       });
     }
+
+    console.log(`🔍 Buscando usuário: ${username}`);
 
     // Encontre o usuário pelo username
     const user = await User.findOne({ username });
