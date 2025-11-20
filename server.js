@@ -36,6 +36,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/api/auth', passwordResetRoutes);
+app.use('/api/auth', require('./routes/passwordReset'));
 
 // Conexão com MongoDB - Versão para Render
 const connectDB = async () => {
@@ -903,6 +904,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
 
 
 
